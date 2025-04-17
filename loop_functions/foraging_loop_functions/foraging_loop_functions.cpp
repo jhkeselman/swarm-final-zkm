@@ -150,13 +150,13 @@ void CForagingLoopFunctions::PreStep() {
          /* Check whether the foot-bot is in the nest */
          if(inRadius(cPos)) {
             /* Place a new food item on the ground */
-            CVector2 samplePos;
-            do {
-               samplePos = CVector2(m_pcRNG->Uniform(m_cForagingArenaSideX),
-                        m_pcRNG->Uniform(m_cForagingArenaSideY));
-            } while(inRadius(samplePos, 0.25));
-            m_cFoodPos[sFoodData.FoodItemIdx].Set(samplePos.GetX(),
-                                                  samplePos.GetY());
+            // CVector2 samplePos;
+            // do {
+            //    samplePos = CVector2(m_pcRNG->Uniform(m_cForagingArenaSideX),
+            //             m_pcRNG->Uniform(m_cForagingArenaSideY));
+            // } while(inRadius(samplePos, 0.25));
+            // m_cFoodPos[sFoodData.FoodItemIdx].Set(samplePos.GetX(),
+            //                                       samplePos.GetY());
             /* Drop the food item */
             sFoodData.HasFoodItem = false;
             sFoodData.FoodItemIdx = 0;
