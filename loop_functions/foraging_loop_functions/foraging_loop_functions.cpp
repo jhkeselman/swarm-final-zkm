@@ -87,7 +87,8 @@ void CForagingLoopFunctions::Reset() {
                   m_pcRNG->Uniform(m_cForagingArenaSideY));
       } while(inRadius(samplePos, 0.25));
       
-      m_cFoodPos.push_back(samplePos);
+      m_cFoodPos[i].Set(samplePos.GetX(),
+                        samplePos.GetY());
    }
 }
 
