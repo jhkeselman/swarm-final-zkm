@@ -18,6 +18,14 @@ CForagingLoopFunctions::CForagingLoopFunctions() :
    m_unEnergyPerWalkingRobot(1) {
 }
 
+bool inRadius(const CVector2& c_position_on_plane) {
+   float radius = 1.0;
+   float x = c_position_on_plane.GetX();
+   float y = c_position_on_plane.GetY(); 
+
+   return x*x + y*y < radius*radius;
+}
+
 /****************************************/
 /****************************************/
 
@@ -86,7 +94,7 @@ void CForagingLoopFunctions::Destroy() {
 /****************************************/
 
 CColor CForagingLoopFunctions::GetFloorColor(const CVector2& c_position_on_plane) {
-   if(c_position_on_plane.GetX() < -1.0f) {
+   if(inRadius(c_position_on_plane)) { // -1.0f
       return CColor::GRAY50;
    }
    for(UInt32 i = 0; i < m_cFoodPos.size(); ++i) {
@@ -130,7 +138,7 @@ void CForagingLoopFunctions::PreStep() {
       /* The foot-bot has a food item */
       if(sFoodData.HasFoodItem) {
          /* Check whether the foot-bot is in the nest */
-         if(cPos.GetX() < -1.0f) {
+         if(inRadius(cPos)) {
             /* Place a new food item on the ground */
             m_cFoodPos[sFoodData.FoodItemIdx].Set(m_pcRNG->Uniform(m_cForagingArenaSideX),
                                                   m_pcRNG->Uniform(m_cForagingArenaSideY));
@@ -148,7 +156,7 @@ void CForagingLoopFunctions::PreStep() {
       else {
          /* The foot-bot has no food item */
          /* Check whether the foot-bot is out of the nest */
-         if(cPos.GetX() > -1.0f) {
+         if(!inRadius(cPos)) {
             /* Check whether the foot-bot is on a food item */
             bool bDone = false;
             for(size_t i = 0; i < m_cFoodPos.size() && !bDone; ++i) {
