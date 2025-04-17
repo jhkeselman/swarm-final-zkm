@@ -18,8 +18,8 @@ CForagingLoopFunctions::CForagingLoopFunctions() :
    m_unEnergyPerWalkingRobot(1) {
 }
 
-bool inRadius(const CVector2& c_position_on_plane) {
-   float radius = 1.0;
+bool inRadius(const CVector2& c_position_on_plane, float buffer = 0) {
+   float radius = 0.5 + buffer;
    float x = c_position_on_plane.GetX();
    float y = c_position_on_plane.GetY(); 
 
@@ -48,7 +48,7 @@ void CForagingLoopFunctions::Init(TConfigurationNode& t_node) {
          do {
             samplePos = CVector2(m_pcRNG->Uniform(m_cForagingArenaSideX),
                      m_pcRNG->Uniform(m_cForagingArenaSideY));
-         } while(inRadius(samplePos));
+         } while(inRadius(samplePos, 0.25));
          
          m_cFoodPos.push_back(samplePos);
       }
@@ -81,8 +81,13 @@ void CForagingLoopFunctions::Reset() {
    m_cOutput << "# clock\twalking\tresting\tcollected_food\tenergy" << std::endl;
    /* Distribute uniformly the items in the environment */
    for(UInt32 i = 0; i < m_cFoodPos.size(); ++i) {
-      m_cFoodPos[i].Set(m_pcRNG->Uniform(m_cForagingArenaSideX),
-                        m_pcRNG->Uniform(m_cForagingArenaSideY));
+      CVector2 samplePos;
+      do {
+         samplePos = CVector2(m_pcRNG->Uniform(m_cForagingArenaSideX),
+                  m_pcRNG->Uniform(m_cForagingArenaSideY));
+      } while(inRadius(samplePos, 0.25));
+      
+      m_cFoodPos.push_back(samplePos);
    }
 }
 
@@ -144,8 +149,13 @@ void CForagingLoopFunctions::PreStep() {
          /* Check whether the foot-bot is in the nest */
          if(inRadius(cPos)) {
             /* Place a new food item on the ground */
-            m_cFoodPos[sFoodData.FoodItemIdx].Set(m_pcRNG->Uniform(m_cForagingArenaSideX),
-                                                  m_pcRNG->Uniform(m_cForagingArenaSideY));
+            CVector2 samplePos;
+            do {
+               samplePos = CVector2(m_pcRNG->Uniform(m_cForagingArenaSideX),
+                        m_pcRNG->Uniform(m_cForagingArenaSideY));
+            } while(inRadius(samplePos, 0.25));
+            m_cFoodPos[sFoodData.FoodItemIdx].Set(samplePos.GetX(),
+                                                  samplePos.GetY());
             /* Drop the food item */
             sFoodData.HasFoodItem = false;
             sFoodData.FoodItemIdx = 0;
