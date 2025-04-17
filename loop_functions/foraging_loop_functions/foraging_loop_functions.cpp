@@ -8,7 +8,7 @@
 /****************************************/
 
 CForagingLoopFunctions::CForagingLoopFunctions() :
-   m_cForagingArenaSideX(-0.9f, 1.7f),
+   m_cForagingArenaSideX(-1.7f, 1.7f),
    m_cForagingArenaSideY(-1.7f, 1.7f),
    m_pcFloor(NULL),
    m_pcRNG(NULL),
@@ -44,9 +44,13 @@ void CForagingLoopFunctions::Init(TConfigurationNode& t_node) {
       m_pcRNG = CRandom::CreateRNG("argos");
       /* Distribute uniformly the items in the environment */
       for(UInt32 i = 0; i < unFoodItems; ++i) {
-         m_cFoodPos.push_back(
-            CVector2(m_pcRNG->Uniform(m_cForagingArenaSideX),
-                     m_pcRNG->Uniform(m_cForagingArenaSideY)));
+         CVector2 samplePos;
+         do {
+            samplePos = CVector2(m_pcRNG->Uniform(m_cForagingArenaSideX),
+                     m_pcRNG->Uniform(m_cForagingArenaSideY));
+         } while(inRadius(samplePos));
+         
+         m_cFoodPos.push_back(samplePos);
       }
       /* Get the output file name from XML */
       GetNodeAttribute(tForaging, "output", m_strOutput);
