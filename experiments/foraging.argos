@@ -35,6 +35,7 @@
         <footbot_light implementation="rot_z_only" show_rays="false" />
         <footbot_motor_ground implementation="rot_z_only" />
         <range_and_bearing implementation="medium" medium="rab" />
+        <positioning implementation="default" />
       </sensors>
       <params>
         <diffusion go_straight_angle_range="-5:5"

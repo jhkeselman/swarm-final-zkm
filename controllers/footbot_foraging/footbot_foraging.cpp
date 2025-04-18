@@ -130,6 +130,8 @@ void CFootBotForaging::Init(TConfigurationNode& t_node) {
       m_pcProximity = GetSensor  <CCI_FootBotProximitySensor      >("footbot_proximity"    );
       m_pcLight     = GetSensor  <CCI_FootBotLightSensor          >("footbot_light"        );
       m_pcGround    = GetSensor  <CCI_FootBotMotorGroundSensor    >("footbot_motor_ground" );
+
+      m_pcPosition  = GetSensor  <CCI_PositioningSensor          >("positioning"    );
       /*
        * Parse XML parameters
        */
@@ -163,6 +165,7 @@ void CFootBotForaging::ControlStep() {
    // }
 
    // LOG << ss.str() << std::endl;
+   LOG << "POS" << m_pcPosition->GetReading().Position << std::endl;
 
    switch(m_sStateData.State) {
       case SStateData::STATE_RESTING: {
@@ -476,6 +479,94 @@ void CFootBotForaging::Explore() {
       else {
          /* Use the diffusion vector only */
          SetWheelSpeedsFromVector(m_sWheelTurningParams.MaxSpeed * cDiffusion);
+      }
+   }
+}
+
+void CFootBotForaging::ExploreRandom() {
+   /* We switch to 'return to nest' in two situations:
+    * 1. if we have a food item
+    * 2. if we have not found a food item for some time;
+    *    in this case, the switch is probabilistic
+    */
+   bool bReturnToNest(false);
+   /*
+    * Test the first condition: have we found a food item?
+    * NOTE: the food data is updated by the loop functions, so
+    * here we just need to read it
+    */
+   if(m_sFoodData.HasFoodItem) {
+      /* Apply the food rule, decreasing ExploreToRestProb and increasing
+       * RestToExploreProb */
+      m_sStateData.ExploreToRestProb -= m_sStateData.FoodRuleExploreToRestDeltaProb;
+      m_sStateData.ProbRange.TruncValue(m_sStateData.ExploreToRestProb);
+      m_sStateData.RestToExploreProb += m_sStateData.FoodRuleRestToExploreDeltaProb;
+      m_sStateData.ProbRange.TruncValue(m_sStateData.RestToExploreProb);
+      /* Store the result of the expedition */
+      m_eLastExplorationResult = LAST_EXPLORATION_SUCCESSFUL;
+      /* Switch to 'return to nest' */
+      bReturnToNest = true;
+   }
+   /* Test the second condition: we probabilistically switch to 'return to
+    * nest' if we have been wandering for some time and found nothing */
+   else if(m_sStateData.TimeExploringUnsuccessfully > m_sStateData.MinimumUnsuccessfulExploreTime) {
+      if (m_pcRNG->Uniform(m_sStateData.ProbRange) < m_sStateData.ExploreToRestProb) {
+         /* Store the result of the expedition */
+         m_eLastExplorationResult = LAST_EXPLORATION_UNSUCCESSFUL;
+         /* Switch to 'return to nest' */
+         bReturnToNest = true;
+      }
+      else {
+         /* Apply the food rule, increasing ExploreToRestProb and
+          * decreasing RestToExploreProb */
+         m_sStateData.ExploreToRestProb += m_sStateData.FoodRuleExploreToRestDeltaProb;
+         m_sStateData.ProbRange.TruncValue(m_sStateData.ExploreToRestProb);
+         m_sStateData.RestToExploreProb -= m_sStateData.FoodRuleRestToExploreDeltaProb;
+         m_sStateData.ProbRange.TruncValue(m_sStateData.RestToExploreProb);
+      }
+   }
+   /* So, do we return to the nest now? */
+   if(bReturnToNest) {
+      /* Yes, we do! */
+      m_sStateData.TimeExploringUnsuccessfully = 0;
+      m_sStateData.TimeSearchingForPlaceInNest = 0;
+      m_pcLEDs->SetAllColors(CColor::BLUE);
+      m_sStateData.State = SStateData::STATE_RETURN_TO_NEST;
+   }
+   else {
+      /* No, perform the actual exploration */
+      ++m_sStateData.TimeExploringUnsuccessfully;
+      UpdateState();
+      /* Get the diffusion vector to perform obstacle avoidance */
+      bool bCollision;
+      CVector2 cDiffusion = DiffusionVector(bCollision);
+      /* Apply the collision rule, if a collision avoidance happened */
+      if(bCollision) {
+         /* Collision avoidance happened, increase ExploreToRestProb and
+          * decrease RestToExploreProb */
+         m_sStateData.ExploreToRestProb += m_sStateData.CollisionRuleExploreToRestDeltaProb;
+         m_sStateData.ProbRange.TruncValue(m_sStateData.ExploreToRestProb);
+         m_sStateData.RestToExploreProb -= m_sStateData.CollisionRuleExploreToRestDeltaProb;
+         m_sStateData.ProbRange.TruncValue(m_sStateData.RestToExploreProb);
+      }
+      /*
+       * If we are in the nest, we combine antiphototaxis with obstacle
+       * avoidance
+       * Outside the nest, we just use the diffusion vector
+       */
+      if(m_sStateData.InNest) {
+         /*
+          * The vector returned by CalculateVectorToLight() points to
+          * the light. Thus, the minus sign is because we want to go away
+          * from the light.
+          */
+         SetWheelSpeedsFromVector(
+            CVector2(m_sWheelTurningParams.MaxSpeed, m_sWheelTurningParams.MaxSpeed) -
+            m_sWheelTurningParams.MaxSpeed * 0.25f * CalculateVectorToLight());
+      }
+      else {
+         /* Use the diffusion vector only */
+         SetWheelSpeedsFromVector(CVector2(m_sWheelTurningParams.MaxSpeed, m_sWheelTurningParams.MaxSpeed));
       }
    }
 }

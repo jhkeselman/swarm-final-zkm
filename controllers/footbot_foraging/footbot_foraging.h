@@ -29,6 +29,8 @@
 #include <argos3/plugins/robots/foot-bot/control_interface/ci_footbot_light_sensor.h>
 /* Definition of the foot-bot motor ground sensor */
 #include <argos3/plugins/robots/foot-bot/control_interface/ci_footbot_motor_ground_sensor.h>
+/* Definition of the foot-bot motor position sensor */
+#include <argos3/plugins/robots/generic/control_interface/ci_positioning_sensor.h>
 /* Definitions for random number generation */
 #include <argos3/core/utility/math/rng.h>
 
@@ -284,6 +286,8 @@ private:
     */
    void ReturnToNest();
 
+   void ExploreRandom();
+
 private:
 
    /* Pointer to the differential steering actuator */
@@ -300,6 +304,8 @@ private:
    CCI_FootBotLightSensor* m_pcLight;
    /* Pointer to the foot-bot motor ground sensor */
    CCI_FootBotMotorGroundSensor* m_pcGround;
+   /* Pointer to footbot positioning sensor */
+   CCI_PositioningSensor* m_pcPosition;
 
    /* The random number generator */
    CRandom::CRNG* m_pcRNG;
