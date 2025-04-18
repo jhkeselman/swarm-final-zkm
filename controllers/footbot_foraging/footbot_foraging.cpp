@@ -166,14 +166,15 @@ void CFootBotForaging::ControlStep() {
 
    // LOG << ss.str() << std::endl;
    // LOG << "POS" << m_pcPosition->GetReading().Position << std::endl;
-
+   
    switch(m_sStateData.State) {
       case SStateData::STATE_RESTING: {
          Rest();
          break;
       }
       case SStateData::STATE_EXPLORING: {
-         Explore();
+         // Explore();
+         ExploreRandom();
          break;
       }
       case SStateData::STATE_RETURN_TO_NEST: {
@@ -566,9 +567,8 @@ void CFootBotForaging::ExploreRandom() {
       }
       else {
          /* GO TOWARDS THE OBJECTS WHEN OUT OF NEST */
-         CVector2 cHeading = CVector2(-2.0,-2.0) - CVector2(m_pcPosition->GetReading().Position.GetX(), m_pcPosition->GetReading().Position.GetY());
-         LOG << cHeading << std::endl;
-         SetWheelSpeedsFromVector(cHeading);
+         CVector2 cHeading = CVector2(2.0,2.0) - CVector2(m_pcPosition->GetReading().Position.GetX(), m_pcPosition->GetReading().Position.GetY());
+         SetWheelSpeedsFromVector(m_sWheelTurningParams.MaxSpeed * cHeading.Normalize());
       }
    }
 }
