@@ -14,11 +14,13 @@ CFootBotForaging::SFoodData::SFoodData() :
    HasFoodItem(false),
    FoodItemIdx(0),
    TotalFoodItems(0) {}
-
+   
 void CFootBotForaging::SFoodData::Reset() {
    HasFoodItem = false;
    FoodItemIdx = 0;
    TotalFoodItems = 0;
+   m_cFoodPos.clear();
+
 }
 
 /****************************************/
@@ -154,6 +156,14 @@ void CFootBotForaging::Init(TConfigurationNode& t_node) {
 /****************************************/
 
 void CFootBotForaging::ControlStep() {
+   // std::stringstream ss;
+
+   // for (CVector2 num : m_sFoodData.m_cFoodPos) {
+   //    ss << num << " ";  // Add a space or custom separator
+   // }
+
+   // LOG << ss.str() << std::endl;
+
    switch(m_sStateData.State) {
       case SStateData::STATE_RESTING: {
          Rest();

@@ -63,6 +63,9 @@ void CForagingLoopFunctions::Init(TConfigurationNode& t_node) {
       GetNodeAttribute(tForaging, "energy_per_item", m_unEnergyPerFoodItem);
       /* Get energy loss per walking robot */
       GetNodeAttribute(tForaging, "energy_per_walking_robot", m_unEnergyPerWalkingRobot);
+
+      // Assign food positions for ecah robot
+      loadFood();
    }
    catch(CARGoSException& ex) {
       THROW_ARGOSEXCEPTION_NESTED("Error parsing loop functions!", ex);
@@ -92,6 +95,8 @@ void CForagingLoopFunctions::Reset() {
       m_cFoodPos[i].Set(samplePos.GetX(),
                         samplePos.GetY());
    }
+
+   loadFood();
 }
 
 /****************************************/
@@ -180,6 +185,7 @@ void CForagingLoopFunctions::PreStep() {
                if((cPos - m_cFoodPos[i]).SquareLength() < m_fFoodSquareRadius) {
                   /* If so, we move that item out of sight */
                   m_cFoodPos[i].Set(100.0f, 100.f);
+                  deleteFoodItem(i);
                   /* The foot-bot is now carrying an item */
                   sFoodData.HasFoodItem = true;
                   sFoodData.FoodItemIdx = i;
@@ -200,6 +206,46 @@ void CForagingLoopFunctions::PreStep() {
              << unRestingFBs << "\t"
              << m_unCollectedFood << "\t"
              << m_nEnergy << std::endl;
+}
+
+void CForagingLoopFunctions::loadFood() {
+   /* Check whether a robot is on a food item */
+   CSpace::TMapPerType& m_cFootbots = GetSpace().GetEntitiesByType("foot-bot");
+
+   // For each footbot
+   for(CSpace::TMapPerType::iterator it = m_cFootbots.begin();
+       it != m_cFootbots.end();
+       ++it) {
+      /* Get handle to foot-bot entity and controller */
+      CFootBotEntity& cFootBot = *any_cast<CFootBotEntity*>(it->second);
+      CFootBotForaging& cController = dynamic_cast<CFootBotForaging&>(cFootBot.GetControllableEntity().GetController());
+
+      /* Get food data */
+      CFootBotForaging::SFoodData& sFoodData = cController.GetFoodData();
+      
+      // Populate each food structure with locations of all foods
+      sFoodData.m_cFoodPos = m_cFoodPos;
+   }
+}
+
+void CForagingLoopFunctions::deleteFoodItem(int idx) {
+   /* Check whether a robot is on a food item */
+   CSpace::TMapPerType& m_cFootbots = GetSpace().GetEntitiesByType("foot-bot");
+
+   // For each footbot
+   for(CSpace::TMapPerType::iterator it = m_cFootbots.begin();
+       it != m_cFootbots.end();
+       ++it) {
+      /* Get handle to foot-bot entity and controller */
+      CFootBotEntity& cFootBot = *any_cast<CFootBotEntity*>(it->second);
+      CFootBotForaging& cController = dynamic_cast<CFootBotForaging&>(cFootBot.GetControllableEntity().GetController());
+
+      /* Get food data */
+      CFootBotForaging::SFoodData& sFoodData = cController.GetFoodData();
+      
+      // Populate each food structure with locations of all foods
+      sFoodData.m_cFoodPos.erase(sFoodData.m_cFoodPos.begin() + idx);
+   }
 }
 
 /****************************************/
