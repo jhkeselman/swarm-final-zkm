@@ -7,6 +7,21 @@
 /* Logging */
 #include <argos3/core/utility/logging/argos_log.h>
 
+void CFootBotForaging::driveToGoal(CVector2 goal) {
+   CVector2 pos(m_pcPosition->GetReading().Position.GetX(),
+                     m_pcPosition->GetReading().Position.GetY());
+
+   CRadians angle_diff = (goal - pos).Angle() - m_pcPosition->GetReading().Position.GetZAngle();
+   angle_diff.SignedNormalize();
+
+   m_pcWheels->SetLinearVelocity(m_sWheelTurningParams.MaxSpeed - 1.0f * angle_diff.GetValue(), m_sWheelTurningParams.MaxSpeed + 1.0f * angle_diff.GetValue());
+}
+
+CVector2 CFootBotForaging::selectFoodRandom() {
+   UInt32 idx = m_pcRNG->Uniform(CRange<UInt32>(0.0, m_sFoodData.m_cFoodPos.size() - 1));
+   return m_sFoodData.m_cFoodPos[idx];
+}
+
 /****************************************/
 /****************************************/
 
@@ -157,16 +172,7 @@ void CFootBotForaging::Init(TConfigurationNode& t_node) {
 /****************************************/
 /****************************************/
 
-void CFootBotForaging::ControlStep() {
-   // std::stringstream ss;
-
-   // for (CVector2 num : m_sFoodData.m_cFoodPos) {
-   //    ss << num << " ";  // Add a space or custom separator
-   // }
-
-   // LOG << ss.str() << std::endl;
-   // LOG << "POS" << m_pcPosition->GetReading().Position << std::endl;
-   
+void CFootBotForaging::ControlStep() {   
    switch(m_sStateData.State) {
       case SStateData::STATE_RESTING: {
          Rest();
@@ -508,24 +514,6 @@ void CFootBotForaging::ExploreRandom() {
       /* Switch to 'return to nest' */
       bReturnToNest = true;
    }
-   /* Test the second condition: we probabilistically switch to 'return to
-    * nest' if we have been wandering for some time and found nothing */
-   else if(m_sStateData.TimeExploringUnsuccessfully > m_sStateData.MinimumUnsuccessfulExploreTime) {
-      if (m_pcRNG->Uniform(m_sStateData.ProbRange) < m_sStateData.ExploreToRestProb) {
-         /* Store the result of the expedition */
-         m_eLastExplorationResult = LAST_EXPLORATION_UNSUCCESSFUL;
-         /* Switch to 'return to nest' */
-         bReturnToNest = true;
-      }
-      else {
-         /* Apply the food rule, increasing ExploreToRestProb and
-          * decreasing RestToExploreProb */
-         m_sStateData.ExploreToRestProb += m_sStateData.FoodRuleExploreToRestDeltaProb;
-         m_sStateData.ProbRange.TruncValue(m_sStateData.ExploreToRestProb);
-         m_sStateData.RestToExploreProb -= m_sStateData.FoodRuleRestToExploreDeltaProb;
-         m_sStateData.ProbRange.TruncValue(m_sStateData.RestToExploreProb);
-      }
-   }
    /* So, do we return to the nest now? */
    if(bReturnToNest) {
       /* Yes, we do! */
@@ -567,8 +555,15 @@ void CFootBotForaging::ExploreRandom() {
       }
       else {
          /* GO TOWARDS THE OBJECTS WHEN OUT OF NEST */
-         CVector2 cHeading = CVector2(2.0,2.0) - CVector2(m_pcPosition->GetReading().Position.GetX(), m_pcPosition->GetReading().Position.GetY());
-         SetWheelSpeedsFromVector(m_sWheelTurningParams.MaxSpeed * cHeading.Normalize());
+
+         // If a goal hasn't been selected, pick one at random
+         if(locationSelected) {
+            driveToGoal(goal);
+         } else {
+            goal = selectFoodRandom();
+            LOG << goal << std::endl;
+            locationSelected = true;
+         }
       }
    }
 }

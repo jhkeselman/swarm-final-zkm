@@ -288,6 +288,10 @@ private:
 
    void ExploreRandom();
 
+   void driveToGoal(CVector2 goal); 
+
+   CVector2 selectFoodRandom();
+
 private:
 
    /* Pointer to the differential steering actuator */
@@ -326,6 +330,10 @@ private:
    SDiffusionParams m_sDiffusionParams;
    /* The food data */
    SFoodData m_sFoodData;
+
+   CVector2 goal;
+
+   bool locationSelected = false;
 
 };
 

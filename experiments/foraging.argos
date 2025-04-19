@@ -66,7 +66,7 @@
   <!-- ****************** -->
   <loop_functions library="build/loop_functions/foraging_loop_functions/libforaging_loop_functions"
                   label="foraging_loop_functions">
-    <foraging items="15"
+    <foraging items="2"
               radius="0.1"
               energy_per_item="1000"
               energy_per_walking_robot="1"
@@ -129,7 +129,7 @@
     <distribute>
       <position method="uniform" min="-0.35,-0.35,0" max="0.35,0.35,0" />
       <orientation method="uniform" min="0,0,0" max="360,0,0" />
-      <entity quantity="10" max_trials="100">
+      <entity quantity="2" max_trials="100">
         <foot-bot id="fb">
           <controller config="ffc" />
         </foot-bot>
