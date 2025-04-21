@@ -12,15 +12,19 @@ void CFootBotForaging::driveToGoal(CVector2 goal) {
                      m_pcPosition->GetReading().Position.GetY());
 
    CVector2 diff = goal - pos;
-   
+      
    CRadians heading;
    CVector3 axis;
    m_pcPosition->GetReading().Orientation.ToAngleAxis(heading, axis);
 
    CRadians angle_diff = diff.Angle() - heading;
    angle_diff.SignedNormalize();
-   
-   m_pcWheels->SetLinearVelocity(1.0f * m_sWheelTurningParams.MaxSpeed - 2.0f * angle_diff.GetValue() - 0.5f * (angle_diff.GetValue() - last_diff.GetValue()), 1.0f * m_sWheelTurningParams.MaxSpeed + 2.0f * angle_diff.GetValue() + 0.5f * (angle_diff.GetValue() - last_diff.GetValue()));
+    
+   float proportional = 1.0f * angle_diff.GetValue();
+   float derivative = 0.00f * (angle_diff - last_diff).SignedNormalize().GetValue();
+   float left_speed = 0.7f * m_sWheelTurningParams.MaxSpeed - proportional - derivative;
+   float right_speed = 0.7f * m_sWheelTurningParams.MaxSpeed + proportional + derivative;
+   m_pcWheels->SetLinearVelocity(left_speed, right_speed);
    last_diff = angle_diff;
 }
 
