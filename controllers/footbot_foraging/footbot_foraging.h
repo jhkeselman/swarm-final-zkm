@@ -335,6 +335,8 @@ private:
 
    bool locationSelected = false;
 
+   CRadians last_diff;
+
 };
 
 #endif

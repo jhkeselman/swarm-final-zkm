@@ -18,11 +18,10 @@ void CFootBotForaging::driveToGoal(CVector2 goal) {
    m_pcPosition->GetReading().Orientation.ToAngleAxis(heading, axis);
 
    CRadians angle_diff = diff.Angle() - heading;
-   LOG << "Goal angle: " << goal.Angle() << std::endl;
-   LOG << "Robot heading: " << heading << std::endl;
    angle_diff.SignedNormalize();
    
-   m_pcWheels->SetLinearVelocity(0.7f * m_sWheelTurningParams.MaxSpeed - 1.0f * angle_diff.GetValue(), 0.7f * m_sWheelTurningParams.MaxSpeed + 1.0f * angle_diff.GetValue());
+   m_pcWheels->SetLinearVelocity(0.7f * m_sWheelTurningParams.MaxSpeed - 2.5f * angle_diff.GetValue() - 0.75f * (angle_diff.GetValue() - last_diff.GetValue()), 0.7f * m_sWheelTurningParams.MaxSpeed + 2.5f * angle_diff.GetValue() + 0.75f * (angle_diff.GetValue() - last_diff.GetValue()));
+   last_diff = angle_diff;
 }
 
 CVector2 CFootBotForaging::selectFoodRandom() {
