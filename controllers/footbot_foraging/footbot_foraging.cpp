@@ -11,10 +11,12 @@ void CFootBotForaging::driveToGoal(CVector2 goal) {
    CVector2 pos(m_pcPosition->GetReading().Position.GetX(),
                      m_pcPosition->GetReading().Position.GetY());
 
-   CRadians angle_diff = (goal - pos).Angle() - m_pcPosition->GetReading().Position.GetZAngle();
+   CVector2 diff = goal - pos;
+   diff.Rotate(-CRadians::PI_OVER_TWO);
+   CRadians angle_diff = diff.Angle() - m_pcPosition->GetReading().Position.GetZAngle();
    angle_diff.SignedNormalize();
-
-   m_pcWheels->SetLinearVelocity(0.8f * m_sWheelTurningParams.MaxSpeed - 1.0f * angle_diff.GetValue(), 0.8f * m_sWheelTurningParams.MaxSpeed + 1.0f * angle_diff.GetValue());
+   
+   m_pcWheels->SetLinearVelocity(0.7f * m_sWheelTurningParams.MaxSpeed - 1.0f * angle_diff.GetValue(), 0.7f * m_sWheelTurningParams.MaxSpeed + 1.0f * angle_diff.GetValue());
 }
 
 CVector2 CFootBotForaging::selectFoodRandom() {
