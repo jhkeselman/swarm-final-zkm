@@ -25,6 +25,11 @@ void CFootBotForaging::driveToGoal(CVector2 goal) {
 }
 
 CVector2 CFootBotForaging::selectFoodRandom() {
+   if (m_sFoodData.m_cFoodPos.empty()) {
+      LOG << "No food for me!" << std::endl;
+      m_pcWheels->SetLinearVelocity(0.0f, 0.0f);
+      return CVector2(0.0f, 0.0f);
+   }
    UInt32 idx = m_pcRNG->Uniform(CRange<UInt32>(0.0, m_sFoodData.m_cFoodPos.size() - 1));
    return m_sFoodData.m_cFoodPos[idx];
 }
