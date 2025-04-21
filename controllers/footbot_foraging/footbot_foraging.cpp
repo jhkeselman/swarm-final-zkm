@@ -20,7 +20,7 @@ void CFootBotForaging::driveToGoal(CVector2 goal) {
    CRadians angle_diff = diff.Angle() - heading;
    angle_diff.SignedNormalize();
    
-   m_pcWheels->SetLinearVelocity(0.7f * m_sWheelTurningParams.MaxSpeed - 2.5f * angle_diff.GetValue() - 0.75f * (angle_diff.GetValue() - last_diff.GetValue()), 0.7f * m_sWheelTurningParams.MaxSpeed + 2.5f * angle_diff.GetValue() + 0.75f * (angle_diff.GetValue() - last_diff.GetValue()));
+   m_pcWheels->SetLinearVelocity(1.0f * m_sWheelTurningParams.MaxSpeed - 2.0f * angle_diff.GetValue() - 0.5f * (angle_diff.GetValue() - last_diff.GetValue()), 1.0f * m_sWheelTurningParams.MaxSpeed + 2.0f * angle_diff.GetValue() + 0.5f * (angle_diff.GetValue() - last_diff.GetValue()));
    last_diff = angle_diff;
 }
 
@@ -403,6 +403,14 @@ void CFootBotForaging::Rest() {
             }
          }
       }
+      if(!locationSelected) {
+         goal = selectFoodRandom();
+         LOG << goal << std::endl;
+         locationSelected = true;
+         m_pcLEDs->SetAllColors(CColor::GREEN);
+         m_sStateData.State = SStateData::STATE_EXPLORING;
+         m_sStateData.TimeRested = 0;
+      }
    }
 }
 
@@ -432,6 +440,7 @@ void CFootBotForaging::Explore() {
       m_eLastExplorationResult = LAST_EXPLORATION_SUCCESSFUL;
       /* Switch to 'return to nest' */
       bReturnToNest = true;
+      locationSelected = false;
    }
    /* Test the second condition: we probabilistically switch to 'return to
     * nest' if we have been wandering for some time and found nothing */
@@ -520,6 +529,7 @@ void CFootBotForaging::ExploreRandom() {
       m_eLastExplorationResult = LAST_EXPLORATION_SUCCESSFUL;
       /* Switch to 'return to nest' */
       bReturnToNest = true;
+      locationSelected = false;
    }
    /* So, do we return to the nest now? */
    if(bReturnToNest) {
@@ -562,15 +572,8 @@ void CFootBotForaging::ExploreRandom() {
       }
       else {
          /* GO TOWARDS THE OBJECTS WHEN OUT OF NEST */
-
-         // If a goal hasn't been selected, pick one at random
-         if(locationSelected) {
-            driveToGoal(goal);
-         } else {
-            goal = selectFoodRandom();
-            LOG << goal << std::endl;
-            locationSelected = true;
-         }
+         locationSelected = false;
+         driveToGoal(goal);
       }
    }
 }
