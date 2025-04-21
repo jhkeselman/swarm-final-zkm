@@ -64,7 +64,7 @@ void CForagingLoopFunctions::Init(TConfigurationNode& t_node) {
       /* Get energy loss per walking robot */
       GetNodeAttribute(tForaging, "energy_per_walking_robot", m_unEnergyPerWalkingRobot);
 
-      // Assign food positions for ecah robot
+      // Assign food positions for each robot
       loadFood();
    }
    catch(CARGoSException& ex) {
