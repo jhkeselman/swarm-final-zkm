@@ -16,14 +16,21 @@ void CFootBotForaging::driveToGoal(CVector2 goal) {
    CRadians heading;
    CVector3 axis;
    m_pcPosition->GetReading().Orientation.ToAngleAxis(heading, axis);
+   heading.SignedNormalize(); // Ensure heading is normalized
 
-   CRadians angle_diff = diff.Angle() - heading;
-   angle_diff.SignedNormalize();
-    
-   float proportional = 1.0f * angle_diff.GetValue();
-   float derivative = 0.00f * (angle_diff - last_diff).SignedNormalize().GetValue();
-   float left_speed = 0.7f * m_sWheelTurningParams.MaxSpeed - proportional - derivative;
-   float right_speed = 0.7f * m_sWheelTurningParams.MaxSpeed + proportional + derivative;
+   CRadians goal_angle = diff.Angle();
+   goal_angle.SignedNormalize(); // Also normalize the goal direction
+
+   CRadians angle_diff = NormalizedDifference(goal_angle, heading);
+
+   LOG << "heading: " << heading << std::endl;
+   LOG << "error: " << angle_diff << std::endl;
+   LOG << "pos: " << pos << "\ngoal: " << goal << "\ndiff: " << diff << std::endl;
+
+   float proportional = 0.4f * angle_diff.GetValue();
+   // float derivative = 0.05f * (angle_diff - last_diff).SignedNormalize().GetValue();
+   float left_speed = 0.7f * m_sWheelTurningParams.MaxSpeed - proportional;// - derivative;
+   float right_speed = 0.7f * m_sWheelTurningParams.MaxSpeed + proportional;// + derivative;
    m_pcWheels->SetLinearVelocity(left_speed, right_speed);
    last_diff = angle_diff;
 }
