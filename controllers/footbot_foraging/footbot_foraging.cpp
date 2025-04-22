@@ -22,7 +22,7 @@ void CFootBotForaging::driveToGoal(CVector2 goal) {
 
    CRadians angle_diff = goal_angle - heading;
    
-   float angle_threshold = M_PI / 16;
+   float angle_threshold = M_PI / 24;
    switch (drive_state) {
       case TURNING_TO_GOAL:
          // If the robot is within the angle threshold, transition to driving
@@ -37,7 +37,7 @@ void CFootBotForaging::driveToGoal(CVector2 goal) {
 
       case DRIVING_TO_GOAL:
          // Move towards the goal (will be handled in Explore to stop)
-         m_pcWheels->SetLinearVelocity(m_sWheelTurningParams.MaxSpeed + 0.7f * angle_diff.GetValue(), m_sWheelTurningParams.MaxSpeed - 0.7f * angle_diff.GetValue());
+         m_pcWheels->SetLinearVelocity(m_sWheelTurningParams.MaxSpeed + 1.0f * angle_diff.GetValue(), m_sWheelTurningParams.MaxSpeed - 1.0f * angle_diff.GetValue());
          break;
    }
 }
