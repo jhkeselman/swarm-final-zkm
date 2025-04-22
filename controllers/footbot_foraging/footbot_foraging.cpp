@@ -22,14 +22,14 @@ void CFootBotForaging::driveToGoal(CVector2 goal) {
    heading = -heading;
    heading.SignedNormalize();
 
-   CRadians angle_diff = NormalizedDifference(goal_angle, heading);
+   CRadians angle_diff = goal_angle - heading;
    
    float angle_threshold = M_PI / 16;
    switch (drive_state) {
       case TURNING_TO_GOAL:
          // If the robot is within the angle threshold, transition to driving
-         LOG << "ghead: " << (goal_angle* CRadians::RADIANS_TO_DEGREES).GetValue() << "\nhead: " << (heading* CRadians::RADIANS_TO_DEGREES).GetValue() << "\nerror: " << (angle_diff * CRadians::RADIANS_TO_DEGREES).GetValue() << std::endl;
-         if (std::abs(angle_diff.GetValue()) < angle_threshold) {
+         LOG << "diff: " << diff << "\nghead: " << (goal_angle* CRadians::RADIANS_TO_DEGREES).GetValue() << "\nhead: " << (heading* CRadians::RADIANS_TO_DEGREES).GetValue() << "\nerror: " << (angle_diff * CRadians::RADIANS_TO_DEGREES).GetValue() << std::endl;
+         if (angle_diff.GetAbsoluteValue() < angle_threshold) {
             drive_state = DRIVING_TO_GOAL;
          } else {
             // Continue turning towards the goal
@@ -39,7 +39,7 @@ void CFootBotForaging::driveToGoal(CVector2 goal) {
 
       case DRIVING_TO_GOAL:
          // Move towards the goal (will be handled in Explore to stop)
-         m_pcWheels->SetLinearVelocity(m_sWheelTurningParams.MaxSpeed, m_sWheelTurningParams.MaxSpeed);
+         m_pcWheels->SetLinearVelocity(m_sWheelTurningParams.MaxSpeed + 0.7f * angle_diff.GetValue(), m_sWheelTurningParams.MaxSpeed - 0.7f * angle_diff.GetValue());
          break;
    }
 }
@@ -67,7 +67,6 @@ void CFootBotForaging::SFoodData::Reset() {
    FoodItemIdx = 0;
    TotalFoodItems = 0;
    m_cFoodPos.clear();
-
 }
 
 /****************************************/
@@ -239,6 +238,7 @@ void CFootBotForaging::Reset() {
    m_eLastExplorationResult = LAST_EXPLORATION_NONE;
    m_pcRABA->ClearData();
    m_pcRABA->SetData(0, LAST_EXPLORATION_NONE);
+   drive_state = TURNING_TO_GOAL;
 }
 
 /****************************************/
