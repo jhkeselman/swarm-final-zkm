@@ -27,7 +27,7 @@ void CFootBotForaging::driveToGoal(CVector2 goal) {
    switch (drive_state) {
       case TURNING_TO_GOAL:
          // If the robot is within the angle threshold, transition to driving
-         LOG << std::abs(angle_diff.GetValue()) << std::endl;
+         LOG << "heading: " << (heading * CRadians::RADIANS_TO_DEGREES).GetValue() << "\nerror: " << (angle_diff * CRadians::RADIANS_TO_DEGREES).GetValue() << std::endl;
          if (std::abs(angle_diff.GetValue()) < angle_threshold) {
             drive_state = DRIVING_TO_GOAL;
          } else {
