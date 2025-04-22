@@ -22,7 +22,7 @@ void CFootBotForaging::driveToGoal(CVector2 goal) {
 
    CRadians angle_diff = goal_angle - heading;
    
-   float angle_threshold = M_PI / 24;
+   float angle_threshold = M_PI / 32;
    switch (drive_state) {
       case TURNING_TO_GOAL:
          // If the robot is within the angle threshold, transition to driving
@@ -40,16 +40,22 @@ void CFootBotForaging::driveToGoal(CVector2 goal) {
          break;
 
       case DRIVING_TO_GOAL:
-         // Move towards the goal (will be handled in Explore to stop)
-         m_pcWheels->SetLinearVelocity(m_sWheelTurningParams.MaxSpeed - 1.0f * angle_diff.GetValue(), m_sWheelTurningParams.MaxSpeed + 1.0f * angle_diff.GetValue());
-         break;
+         angle_integral += angle_diff;
+         angle_integral.SignedNormalize();
+      
+         float proportional = 1.5f * angle_diff.GetValue();
+         float derivative = 0.4f * (angle_diff - last_diff).SignedNormalize().GetValue();
+         float integral = 0.1f * angle_integral.GetValue();
+      
+         float left_speed = m_sWheelTurningParams.MaxSpeed - proportional- derivative - integral;
+         float right_speed = m_sWheelTurningParams.MaxSpeed + proportional + derivative + integral;
+         m_pcWheels->SetLinearVelocity(left_speed, right_speed);
+         last_diff = angle_diff;
    }
 }
 
 CVector2 CFootBotForaging::selectFoodRandom() {
    if (m_sFoodData.m_cFoodPos.empty()) {
-      LOG << "No food for me!" << std::endl;
-      m_pcWheels->SetLinearVelocity(0.0f, 0.0f);
       return CVector2(0.0f, 0.0f);
    }
    UInt32 idx = m_pcRNG->Uniform(CRange<UInt32>(0.0, m_sFoodData.m_cFoodPos.size() - 1));
@@ -393,50 +399,60 @@ void CFootBotForaging::SetWheelSpeedsFromVector(const CVector2& c_heading) {
 /****************************************/
 
 void CFootBotForaging::Rest() {
-   /* If we have stayed here enough, probabilistically switch to
-    * 'exploring' */
-   if(m_sStateData.TimeRested > m_sStateData.MinimumRestingTime &&
-      m_pcRNG->Uniform(m_sStateData.ProbRange) < m_sStateData.RestToExploreProb) {
-      m_pcLEDs->SetAllColors(CColor::GREEN);
-      m_sStateData.State = SStateData::STATE_EXPLORING;
-      m_sStateData.TimeRested = 0;
-   }
-   else {
-      ++m_sStateData.TimeRested;
-      /* Be sure not to send the last exploration result multiple times */
-      if(m_sStateData.TimeRested == 1) {
-         m_pcRABA->SetData(0, LAST_EXPLORATION_NONE);
-      }
-      /*
-       * Social rule: listen to what other people have found and modify
-       * probabilities accordingly
-       */
-      const CCI_RangeAndBearingSensor::TReadings& tPackets = m_pcRABS->GetReadings();
-      for(size_t i = 0; i < tPackets.size(); ++i) {
-         switch(tPackets[i].Data[0]) {
-            case LAST_EXPLORATION_SUCCESSFUL: {
-               m_sStateData.RestToExploreProb += m_sStateData.SocialRuleRestToExploreDeltaProb;
-               m_sStateData.ProbRange.TruncValue(m_sStateData.RestToExploreProb);
-               m_sStateData.ExploreToRestProb -= m_sStateData.SocialRuleExploreToRestDeltaProb;
-               m_sStateData.ProbRange.TruncValue(m_sStateData.ExploreToRestProb);
-               break;
-            }
-            case LAST_EXPLORATION_UNSUCCESSFUL: {
-               m_sStateData.ExploreToRestProb += m_sStateData.SocialRuleExploreToRestDeltaProb;
-               m_sStateData.ProbRange.TruncValue(m_sStateData.ExploreToRestProb);
-               m_sStateData.RestToExploreProb -= m_sStateData.SocialRuleRestToExploreDeltaProb;
-               m_sStateData.ProbRange.TruncValue(m_sStateData.RestToExploreProb);
-               break;
-            }
-         }
-      }
-      if(!locationSelected) {
-         goal = selectFoodRandom();
-         LOG << goal << std::endl;
-         locationSelected = true;
+   if(stillFood) {
+      /* If we have stayed here enough, probabilistically switch to
+      * 'exploring' */
+      if(m_sStateData.TimeRested > m_sStateData.MinimumRestingTime &&
+         m_pcRNG->Uniform(m_sStateData.ProbRange) < m_sStateData.RestToExploreProb) {
          m_pcLEDs->SetAllColors(CColor::GREEN);
          m_sStateData.State = SStateData::STATE_EXPLORING;
          m_sStateData.TimeRested = 0;
+      }
+      else {
+         ++m_sStateData.TimeRested;
+         /* Be sure not to send the last exploration result multiple times */
+         if(m_sStateData.TimeRested == 1) {
+            m_pcRABA->SetData(0, LAST_EXPLORATION_NONE);
+         }
+         /*
+         * Social rule: listen to what other people have found and modify
+         * probabilities accordingly
+         */
+         const CCI_RangeAndBearingSensor::TReadings& tPackets = m_pcRABS->GetReadings();
+         for(size_t i = 0; i < tPackets.size(); ++i) {
+            switch(tPackets[i].Data[0]) {
+               case LAST_EXPLORATION_SUCCESSFUL: {
+                  m_sStateData.RestToExploreProb += m_sStateData.SocialRuleRestToExploreDeltaProb;
+                  m_sStateData.ProbRange.TruncValue(m_sStateData.RestToExploreProb);
+                  m_sStateData.ExploreToRestProb -= m_sStateData.SocialRuleExploreToRestDeltaProb;
+                  m_sStateData.ProbRange.TruncValue(m_sStateData.ExploreToRestProb);
+                  break;
+               }
+               case LAST_EXPLORATION_UNSUCCESSFUL: {
+                  m_sStateData.ExploreToRestProb += m_sStateData.SocialRuleExploreToRestDeltaProb;
+                  m_sStateData.ProbRange.TruncValue(m_sStateData.ExploreToRestProb);
+                  m_sStateData.RestToExploreProb -= m_sStateData.SocialRuleRestToExploreDeltaProb;
+                  m_sStateData.ProbRange.TruncValue(m_sStateData.RestToExploreProb);
+                  break;
+               }
+            }
+         }
+         if(!locationSelected) {
+            goal = selectFoodRandom();
+            if (goal.GetX() == 0.0f && goal.GetY() == 0.0f) {
+               LOG << "No food for me!" << std::endl;
+               m_pcWheels->SetLinearVelocity(0.0f, 0.0f);
+               stillFood = false;
+            }
+            else {
+               LOG << goal << std::endl;
+               locationSelected = true;
+               m_pcLEDs->SetAllColors(CColor::GREEN);
+               m_sStateData.State = SStateData::STATE_EXPLORING;
+               m_sStateData.TimeRested = 0;
+               stillFood = true;
+            }
+         }
       }
    }
 }

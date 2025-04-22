@@ -335,6 +335,10 @@ private:
 
    bool locationSelected = false;
 
+   CRadians last_diff;
+   CRadians angle_integral;
+   bool stillFood = true;
+
    enum State {
       TURNING_TO_GOAL,
       DRIVING_TO_GOAL
