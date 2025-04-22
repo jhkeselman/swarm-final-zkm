@@ -30,14 +30,18 @@ void CFootBotForaging::driveToGoal(CVector2 goal) {
          if (angle_diff.GetAbsoluteValue() < angle_threshold) {
             drive_state = DRIVING_TO_GOAL;
          } else {
-            // Continue turning towards the goal
-            m_pcWheels->SetLinearVelocity(m_sWheelTurningParams.MaxSpeed, -m_sWheelTurningParams.MaxSpeed);
+            if(angle_diff.GetValue() < 0) {
+               // Continue turning towards the goal
+               m_pcWheels->SetLinearVelocity(m_sWheelTurningParams.MaxSpeed, -m_sWheelTurningParams.MaxSpeed);
+            } else {
+               m_pcWheels->SetLinearVelocity(-m_sWheelTurningParams.MaxSpeed, m_sWheelTurningParams.MaxSpeed);
+            }
          }
          break;
 
       case DRIVING_TO_GOAL:
          // Move towards the goal (will be handled in Explore to stop)
-         m_pcWheels->SetLinearVelocity(m_sWheelTurningParams.MaxSpeed + 1.0f * angle_diff.GetValue(), m_sWheelTurningParams.MaxSpeed - 1.0f * angle_diff.GetValue());
+         m_pcWheels->SetLinearVelocity(m_sWheelTurningParams.MaxSpeed - 1.0f * angle_diff.GetValue(), m_sWheelTurningParams.MaxSpeed + 1.0f * angle_diff.GetValue());
          break;
    }
 }
