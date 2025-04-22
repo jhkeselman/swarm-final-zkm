@@ -16,23 +16,31 @@ void CFootBotForaging::driveToGoal(CVector2 goal) {
    CRadians heading;
    CVector3 axis;
    m_pcPosition->GetReading().Orientation.ToAngleAxis(heading, axis);
-   heading.SignedNormalize(); // Ensure heading is normalized
+   heading.SignedNormalize();
 
    CRadians goal_angle = diff.Angle();
-   goal_angle.SignedNormalize(); // Also normalize the goal direction
+   goal_angle.SignedNormalize();
 
    CRadians angle_diff = NormalizedDifference(goal_angle, heading);
+   
+   float angle_threshold = M_PI / 16;
+   switch (drive_state) {
+      case TURNING_TO_GOAL:
+         // If the robot is within the angle threshold, transition to driving
+         LOG << std::abs(angle_diff.GetValue()) << std::endl;
+         if (std::abs(angle_diff.GetValue()) < angle_threshold) {
+            drive_state = DRIVING_TO_GOAL;
+         } else {
+            // Continue turning towards the goal
+            m_pcWheels->SetLinearVelocity(m_sWheelTurningParams.MaxSpeed, -m_sWheelTurningParams.MaxSpeed);
+         }
+         break;
 
-   LOG << "heading: " << heading << std::endl;
-   LOG << "error: " << angle_diff << std::endl;
-   LOG << "pos: " << pos << "\ngoal: " << goal << "\ndiff: " << diff << std::endl;
-
-   float proportional = 0.4f * angle_diff.GetValue();
-   // float derivative = 0.05f * (angle_diff - last_diff).SignedNormalize().GetValue();
-   float left_speed = 0.7f * m_sWheelTurningParams.MaxSpeed - proportional;// - derivative;
-   float right_speed = 0.7f * m_sWheelTurningParams.MaxSpeed + proportional;// + derivative;
-   m_pcWheels->SetLinearVelocity(left_speed, right_speed);
-   last_diff = angle_diff;
+      case DRIVING_TO_GOAL:
+         // Move towards the goal (will be handled in Explore to stop)
+         m_pcWheels->SetLinearVelocity(m_sWheelTurningParams.MaxSpeed, m_sWheelTurningParams.MaxSpeed);
+         break;
+   }
 }
 
 CVector2 CFootBotForaging::selectFoodRandom() {
@@ -546,6 +554,7 @@ void CFootBotForaging::ExploreRandom() {
       /* Switch to 'return to nest' */
       bReturnToNest = true;
       locationSelected = false;
+      drive_state = TURNING_TO_GOAL;
    }
    /* So, do we return to the nest now? */
    if(bReturnToNest) {
@@ -576,21 +585,8 @@ void CFootBotForaging::ExploreRandom() {
        * avoidance
        * Outside the nest, we just use the diffusion vector
        */
-      if(m_sStateData.InNest) {
-         /*
-          * The vector returned by CalculateVectorToLight() points to
-          * the light. Thus, the minus sign is because we want to go away
-          * from the light.
-          */
-         SetWheelSpeedsFromVector(
-            m_sWheelTurningParams.MaxSpeed * cDiffusion -
-            m_sWheelTurningParams.MaxSpeed * 0.25f * CalculateVectorToLight());
-      }
-      else {
-         /* GO TOWARDS THE OBJECTS WHEN OUT OF NEST */
-         locationSelected = false;
-         driveToGoal(goal);
-      }
+      locationSelected = false;
+      driveToGoal(goal);
    }
 }
 

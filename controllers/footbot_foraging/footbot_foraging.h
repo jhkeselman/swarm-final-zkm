@@ -335,7 +335,12 @@ private:
 
    bool locationSelected = false;
 
-   CRadians last_diff;
+   enum State {
+      TURNING_TO_GOAL,
+      DRIVING_TO_GOAL
+   };
+  
+   State drive_state = TURNING_TO_GOAL;
 
 };
 
