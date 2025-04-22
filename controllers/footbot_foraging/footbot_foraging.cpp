@@ -7,11 +7,11 @@
 /* Logging */
 #include <argos3/core/utility/logging/argos_log.h>
 
-void CFootBotForaging::driveToGoal(CVector2 goal) {
+void CFootBotForaging::driveToGoal(CVector2 goal, CVector2 cDiffusion) {
    CVector2 pos(m_pcPosition->GetReading().Position.GetX(),
                      m_pcPosition->GetReading().Position.GetY());
 
-   CVector2 diff = goal - pos;
+   CVector2 diff = (goal - pos);
 
    CRadians goal_angle = diff.Angle();
    goal_angle.SignedNormalize();
@@ -605,7 +605,7 @@ void CFootBotForaging::ExploreRandom() {
        * Outside the nest, we just use the diffusion vector
        */
       locationSelected = false;
-      driveToGoal(goal);
+      driveToGoal(goal, cDiffusion);
    }
 }
 

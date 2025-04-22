@@ -288,7 +288,7 @@ private:
 
    void ExploreRandom();
 
-   void driveToGoal(CVector2 goal); 
+   void driveToGoal(CVector2 goal, CVector2 cDiffusion); 
 
    CVector2 selectFoodRandom();
 
