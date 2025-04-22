@@ -12,14 +12,15 @@ void CFootBotForaging::driveToGoal(CVector2 goal) {
                      m_pcPosition->GetReading().Position.GetY());
 
    CVector2 diff = goal - pos;
+
+   CRadians goal_angle = diff.Angle();
+   goal_angle.SignedNormalize();
       
    CRadians heading;
    CVector3 axis;
    m_pcPosition->GetReading().Orientation.ToAngleAxis(heading, axis);
    heading.SignedNormalize();
-
-   CRadians goal_angle = diff.Angle();
-   goal_angle.SignedNormalize();
+   heading = -heading;
 
    CRadians angle_diff = NormalizedDifference(goal_angle, heading);
    
@@ -27,7 +28,7 @@ void CFootBotForaging::driveToGoal(CVector2 goal) {
    switch (drive_state) {
       case TURNING_TO_GOAL:
          // If the robot is within the angle threshold, transition to driving
-         LOG << "heading: " << (heading * CRadians::RADIANS_TO_DEGREES).GetValue() << "\nerror: " << (angle_diff * CRadians::RADIANS_TO_DEGREES).GetValue() << std::endl;
+         LOG << "ghead: " << (goal_angle* CRadians::RADIANS_TO_DEGREES).GetValue() << "\nhead" << (heading* CRadians::RADIANS_TO_DEGREES).GetValue() << "\nerror: " << (angle_diff * CRadians::RADIANS_TO_DEGREES).GetValue() << std::endl;
          if (std::abs(angle_diff.GetValue()) < angle_threshold) {
             drive_state = DRIVING_TO_GOAL;
          } else {
