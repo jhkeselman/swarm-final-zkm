@@ -16,11 +16,9 @@ void CFootBotForaging::driveToGoal(CVector2 goal) {
    CRadians goal_angle = diff.Angle();
    goal_angle.SignedNormalize();
       
-   CRadians heading;
-   CVector3 axis;
-   m_pcPosition->GetReading().Orientation.ToAngleAxis(heading, axis);
-   heading = -heading;
-   heading.SignedNormalize();
+   CRadians heading, pitch, roll;
+   CQuaternion orientation = m_pcPosition->GetReading().Orientation;
+   orientation.ToEulerAngles(heading, pitch, roll);
 
    CRadians angle_diff = goal_angle - heading;
    
