@@ -26,31 +26,18 @@ void CFootBotForaging::driveToGoal(CVector2 goal, CVector2 cDiffusion) {
    switch (drive_state) {
       case TURNING_TO_GOAL:
          // If the robot is within the angle threshold, transition to driving
-         LOG << "diff: " << diff << "\nghead: " << (goal_angle* CRadians::RADIANS_TO_DEGREES).GetValue() << "\nhead: " << (heading* CRadians::RADIANS_TO_DEGREES).GetValue() << "\nerror: " << (angle_diff * CRadians::RADIANS_TO_DEGREES).GetValue() << std::endl;
+         // LOG << "diff: " << diff << "\nghead: " << (goal_angle* CRadians::RADIANS_TO_DEGREES).GetValue() << "\nhead: " << (heading* CRadians::RADIANS_TO_DEGREES).GetValue() << "\nerror: " << (angle_diff * CRadians::RADIANS_TO_DEGREES).GetValue() << std::endl;
          if (angle_diff.GetAbsoluteValue() < angle_threshold) {
             drive_state = DRIVING_TO_GOAL;
          } else {
-            if(angle_diff.GetValue() < 0) {
-               // Continue turning towards the goal
-               m_pcWheels->SetLinearVelocity(m_sWheelTurningParams.MaxSpeed, -m_sWheelTurningParams.MaxSpeed);
-            } else {
-               m_pcWheels->SetLinearVelocity(-m_sWheelTurningParams.MaxSpeed, m_sWheelTurningParams.MaxSpeed);
-            }
+            CVector2 turn_vec(1.0, angle_diff);  // Unit length in angle_diff direction
+            SetWheelSpeedsFromVector(turn_vec * m_sWheelTurningParams.MaxSpeed);
          }
          break;
 
       case DRIVING_TO_GOAL:
-         angle_integral += angle_diff;
-         angle_integral.SignedNormalize();
-      
-         float proportional = 1.5f * angle_diff.GetValue();
-         float derivative = 0.4f * (angle_diff - last_diff).SignedNormalize().GetValue();
-         float integral = 0.1f * angle_integral.GetValue();
-      
-         float left_speed = m_sWheelTurningParams.MaxSpeed - proportional- derivative - integral;
-         float right_speed = m_sWheelTurningParams.MaxSpeed + proportional + derivative + integral;
-         m_pcWheels->SetLinearVelocity(left_speed, right_speed);
-         last_diff = angle_diff;
+         SetWheelSpeedsFromVector(diff + cDiffusion * m_sWheelTurningParams.MaxSpeed);
+         break;
    }
 }
 
