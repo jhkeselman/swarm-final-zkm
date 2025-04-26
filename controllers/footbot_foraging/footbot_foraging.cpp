@@ -7,6 +7,48 @@
 /* Logging */
 #include <argos3/core/utility/logging/argos_log.h>
 
+void CFootBotForaging::driveToGoal(CVector2 goal, CVector2 cDiffusion) {
+   CVector2 pos(m_pcPosition->GetReading().Position.GetX(),
+                     m_pcPosition->GetReading().Position.GetY());
+
+   CVector2 diff = (goal - pos);
+
+   CRadians goal_angle = diff.Angle();
+   goal_angle.SignedNormalize();
+      
+   CRadians heading, pitch, roll;
+   CQuaternion orientation = m_pcPosition->GetReading().Orientation;
+   orientation.ToEulerAngles(heading, pitch, roll);
+
+   CRadians angle_diff = goal_angle - heading;
+   
+   float angle_threshold = M_PI / 32;
+   switch (drive_state) {
+      case TURNING_TO_GOAL:
+         // If the robot is within the angle threshold, transition to driving
+         // LOG << "diff: " << diff << "\nghead: " << (goal_angle* CRadians::RADIANS_TO_DEGREES).GetValue() << "\nhead: " << (heading* CRadians::RADIANS_TO_DEGREES).GetValue() << "\nerror: " << (angle_diff * CRadians::RADIANS_TO_DEGREES).GetValue() << std::endl;
+         if (angle_diff.GetAbsoluteValue() < angle_threshold) {
+            drive_state = DRIVING_TO_GOAL;
+         } else {
+            CVector2 turn_vec(1.0, angle_diff);  // Unit length in angle_diff direction
+            SetWheelSpeedsFromVector(turn_vec * m_sWheelTurningParams.MaxSpeed);
+         }
+         break;
+
+      case DRIVING_TO_GOAL:
+         SetWheelSpeedsFromVector(diff + cDiffusion * m_sWheelTurningParams.MaxSpeed);
+         break;
+   }
+}
+
+CVector2 CFootBotForaging::selectFoodRandom() {
+   if (m_sFoodData.m_cFoodPos.empty()) {
+      return CVector2(0.0f, 0.0f);
+   }
+   UInt32 idx = m_pcRNG->Uniform(CRange<UInt32>(0.0, m_sFoodData.m_cFoodPos.size() - 1));
+   return m_sFoodData.m_cFoodPos[idx];
+}
+
 /****************************************/
 /****************************************/
 
@@ -14,11 +56,12 @@ CFootBotForaging::SFoodData::SFoodData() :
    HasFoodItem(false),
    FoodItemIdx(0),
    TotalFoodItems(0) {}
-
+   
 void CFootBotForaging::SFoodData::Reset() {
    HasFoodItem = false;
    FoodItemIdx = 0;
    TotalFoodItems = 0;
+   m_cFoodPos.clear();
 }
 
 /****************************************/
@@ -128,6 +171,8 @@ void CFootBotForaging::Init(TConfigurationNode& t_node) {
       m_pcProximity = GetSensor  <CCI_FootBotProximitySensor      >("footbot_proximity"    );
       m_pcLight     = GetSensor  <CCI_FootBotLightSensor          >("footbot_light"        );
       m_pcGround    = GetSensor  <CCI_FootBotMotorGroundSensor    >("footbot_motor_ground" );
+
+      m_pcPosition  = GetSensor  <CCI_PositioningSensor          >("positioning"    );
       /*
        * Parse XML parameters
        */
@@ -153,14 +198,15 @@ void CFootBotForaging::Init(TConfigurationNode& t_node) {
 /****************************************/
 /****************************************/
 
-void CFootBotForaging::ControlStep() {
+void CFootBotForaging::ControlStep() {   
    switch(m_sStateData.State) {
       case SStateData::STATE_RESTING: {
          Rest();
          break;
       }
       case SStateData::STATE_EXPLORING: {
-         Explore();
+         // Explore();
+         ExploreRandom();
          break;
       }
       case SStateData::STATE_RETURN_TO_NEST: {
@@ -187,6 +233,7 @@ void CFootBotForaging::Reset() {
    m_eLastExplorationResult = LAST_EXPLORATION_NONE;
    m_pcRABA->ClearData();
    m_pcRABA->SetData(0, LAST_EXPLORATION_NONE);
+   drive_state = TURNING_TO_GOAL;
 }
 
 /****************************************/
@@ -339,40 +386,58 @@ void CFootBotForaging::SetWheelSpeedsFromVector(const CVector2& c_heading) {
 /****************************************/
 
 void CFootBotForaging::Rest() {
-   /* If we have stayed here enough, probabilistically switch to
-    * 'exploring' */
-   if(m_sStateData.TimeRested > m_sStateData.MinimumRestingTime &&
-      m_pcRNG->Uniform(m_sStateData.ProbRange) < m_sStateData.RestToExploreProb) {
-      m_pcLEDs->SetAllColors(CColor::GREEN);
-      m_sStateData.State = SStateData::STATE_EXPLORING;
-      m_sStateData.TimeRested = 0;
-   }
-   else {
-      ++m_sStateData.TimeRested;
-      /* Be sure not to send the last exploration result multiple times */
-      if(m_sStateData.TimeRested == 1) {
-         m_pcRABA->SetData(0, LAST_EXPLORATION_NONE);
+   if(stillFood) {
+      /* If we have stayed here enough, probabilistically switch to
+      * 'exploring' */
+      if(m_sStateData.TimeRested > m_sStateData.MinimumRestingTime &&
+         m_pcRNG->Uniform(m_sStateData.ProbRange) < m_sStateData.RestToExploreProb) {
+         m_pcLEDs->SetAllColors(CColor::GREEN);
+         m_sStateData.State = SStateData::STATE_EXPLORING;
+         m_sStateData.TimeRested = 0;
       }
-      /*
-       * Social rule: listen to what other people have found and modify
-       * probabilities accordingly
-       */
-      const CCI_RangeAndBearingSensor::TReadings& tPackets = m_pcRABS->GetReadings();
-      for(size_t i = 0; i < tPackets.size(); ++i) {
-         switch(tPackets[i].Data[0]) {
-            case LAST_EXPLORATION_SUCCESSFUL: {
-               m_sStateData.RestToExploreProb += m_sStateData.SocialRuleRestToExploreDeltaProb;
-               m_sStateData.ProbRange.TruncValue(m_sStateData.RestToExploreProb);
-               m_sStateData.ExploreToRestProb -= m_sStateData.SocialRuleExploreToRestDeltaProb;
-               m_sStateData.ProbRange.TruncValue(m_sStateData.ExploreToRestProb);
-               break;
+      else {
+         ++m_sStateData.TimeRested;
+         /* Be sure not to send the last exploration result multiple times */
+         if(m_sStateData.TimeRested == 1) {
+            m_pcRABA->SetData(0, LAST_EXPLORATION_NONE);
+         }
+         /*
+         * Social rule: listen to what other people have found and modify
+         * probabilities accordingly
+         */
+         const CCI_RangeAndBearingSensor::TReadings& tPackets = m_pcRABS->GetReadings();
+         for(size_t i = 0; i < tPackets.size(); ++i) {
+            switch(tPackets[i].Data[0]) {
+               case LAST_EXPLORATION_SUCCESSFUL: {
+                  m_sStateData.RestToExploreProb += m_sStateData.SocialRuleRestToExploreDeltaProb;
+                  m_sStateData.ProbRange.TruncValue(m_sStateData.RestToExploreProb);
+                  m_sStateData.ExploreToRestProb -= m_sStateData.SocialRuleExploreToRestDeltaProb;
+                  m_sStateData.ProbRange.TruncValue(m_sStateData.ExploreToRestProb);
+                  break;
+               }
+               case LAST_EXPLORATION_UNSUCCESSFUL: {
+                  m_sStateData.ExploreToRestProb += m_sStateData.SocialRuleExploreToRestDeltaProb;
+                  m_sStateData.ProbRange.TruncValue(m_sStateData.ExploreToRestProb);
+                  m_sStateData.RestToExploreProb -= m_sStateData.SocialRuleRestToExploreDeltaProb;
+                  m_sStateData.ProbRange.TruncValue(m_sStateData.RestToExploreProb);
+                  break;
+               }
             }
-            case LAST_EXPLORATION_UNSUCCESSFUL: {
-               m_sStateData.ExploreToRestProb += m_sStateData.SocialRuleExploreToRestDeltaProb;
-               m_sStateData.ProbRange.TruncValue(m_sStateData.ExploreToRestProb);
-               m_sStateData.RestToExploreProb -= m_sStateData.SocialRuleRestToExploreDeltaProb;
-               m_sStateData.ProbRange.TruncValue(m_sStateData.RestToExploreProb);
-               break;
+         }
+         if(!locationSelected) {
+            goal = selectFoodRandom();
+            if (goal.GetX() == 0.0f && goal.GetY() == 0.0f) {
+               LOG << "No food for me!" << std::endl;
+               m_pcWheels->SetLinearVelocity(0.0f, 0.0f);
+               stillFood = false;
+            }
+            else {
+               LOG << goal << std::endl;
+               locationSelected = true;
+               m_pcLEDs->SetAllColors(CColor::GREEN);
+               m_sStateData.State = SStateData::STATE_EXPLORING;
+               m_sStateData.TimeRested = 0;
+               stillFood = true;
             }
          }
       }
@@ -405,6 +470,7 @@ void CFootBotForaging::Explore() {
       m_eLastExplorationResult = LAST_EXPLORATION_SUCCESSFUL;
       /* Switch to 'return to nest' */
       bReturnToNest = true;
+      locationSelected = false;
    }
    /* Test the second condition: we probabilistically switch to 'return to
     * nest' if we have been wandering for some time and found nothing */
@@ -467,6 +533,66 @@ void CFootBotForaging::Explore() {
          /* Use the diffusion vector only */
          SetWheelSpeedsFromVector(m_sWheelTurningParams.MaxSpeed * cDiffusion);
       }
+   }
+}
+
+void CFootBotForaging::ExploreRandom() {
+   /* We switch to 'return to nest' in two situations:
+    * 1. if we have a food item
+    * 2. if we have not found a food item for some time;
+    *    in this case, the switch is probabilistic
+    */
+   bool bReturnToNest(false);
+   /*
+    * Test the first condition: have we found a food item?
+    * NOTE: the food data is updated by the loop functions, so
+    * here we just need to read it
+    */
+   if(m_sFoodData.HasFoodItem) {
+      /* Apply the food rule, decreasing ExploreToRestProb and increasing
+       * RestToExploreProb */
+      m_sStateData.ExploreToRestProb -= m_sStateData.FoodRuleExploreToRestDeltaProb;
+      m_sStateData.ProbRange.TruncValue(m_sStateData.ExploreToRestProb);
+      m_sStateData.RestToExploreProb += m_sStateData.FoodRuleRestToExploreDeltaProb;
+      m_sStateData.ProbRange.TruncValue(m_sStateData.RestToExploreProb);
+      /* Store the result of the expedition */
+      m_eLastExplorationResult = LAST_EXPLORATION_SUCCESSFUL;
+      /* Switch to 'return to nest' */
+      bReturnToNest = true;
+      locationSelected = false;
+      drive_state = TURNING_TO_GOAL;
+   }
+   /* So, do we return to the nest now? */
+   if(bReturnToNest) {
+      /* Yes, we do! */
+      m_sStateData.TimeExploringUnsuccessfully = 0;
+      m_sStateData.TimeSearchingForPlaceInNest = 0;
+      m_pcLEDs->SetAllColors(CColor::BLUE);
+      m_sStateData.State = SStateData::STATE_RETURN_TO_NEST;
+   }
+   else {
+      /* No, perform the actual exploration */
+      ++m_sStateData.TimeExploringUnsuccessfully;
+      UpdateState();
+      /* Get the diffusion vector to perform obstacle avoidance */
+      bool bCollision;
+      CVector2 cDiffusion = DiffusionVector(bCollision);
+      /* Apply the collision rule, if a collision avoidance happened */
+      if(bCollision) {
+         /* Collision avoidance happened, increase ExploreToRestProb and
+          * decrease RestToExploreProb */
+         m_sStateData.ExploreToRestProb += m_sStateData.CollisionRuleExploreToRestDeltaProb;
+         m_sStateData.ProbRange.TruncValue(m_sStateData.ExploreToRestProb);
+         m_sStateData.RestToExploreProb -= m_sStateData.CollisionRuleExploreToRestDeltaProb;
+         m_sStateData.ProbRange.TruncValue(m_sStateData.RestToExploreProb);
+      }
+      /*
+       * If we are in the nest, we combine antiphototaxis with obstacle
+       * avoidance
+       * Outside the nest, we just use the diffusion vector
+       */
+      locationSelected = false;
+      driveToGoal(goal, cDiffusion);
    }
 }
 

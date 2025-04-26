@@ -29,6 +29,8 @@
 #include <argos3/plugins/robots/foot-bot/control_interface/ci_footbot_light_sensor.h>
 /* Definition of the foot-bot motor ground sensor */
 #include <argos3/plugins/robots/foot-bot/control_interface/ci_footbot_motor_ground_sensor.h>
+/* Definition of the foot-bot motor position sensor */
+#include <argos3/plugins/robots/generic/control_interface/ci_positioning_sensor.h>
 /* Definitions for random number generation */
 #include <argos3/core/utility/math/rng.h>
 
@@ -52,6 +54,7 @@ public:
       bool HasFoodItem;      // true when the robot is carrying a food item
       size_t FoodItemIdx;    // the index of the current food item in the array of available food items
       size_t TotalFoodItems; // the total number of food items carried by this robot during the experiment
+      std::vector<CVector2> m_cFoodPos; // position of all the food
 
       SFoodData();
       void Reset();
@@ -283,6 +286,12 @@ private:
     */
    void ReturnToNest();
 
+   void ExploreRandom();
+
+   void driveToGoal(CVector2 goal, CVector2 cDiffusion); 
+
+   CVector2 selectFoodRandom();
+
 private:
 
    /* Pointer to the differential steering actuator */
@@ -299,6 +308,8 @@ private:
    CCI_FootBotLightSensor* m_pcLight;
    /* Pointer to the foot-bot motor ground sensor */
    CCI_FootBotMotorGroundSensor* m_pcGround;
+   /* Pointer to footbot positioning sensor */
+   CCI_PositioningSensor* m_pcPosition;
 
    /* The random number generator */
    CRandom::CRNG* m_pcRNG;
@@ -319,6 +330,21 @@ private:
    SDiffusionParams m_sDiffusionParams;
    /* The food data */
    SFoodData m_sFoodData;
+
+   CVector2 goal;
+
+   bool locationSelected = false;
+
+   CRadians last_diff;
+   CRadians angle_integral;
+   bool stillFood = true;
+
+   enum State {
+      TURNING_TO_GOAL,
+      DRIVING_TO_GOAL
+   };
+  
+   State drive_state = TURNING_TO_GOAL;
 
 };
 
