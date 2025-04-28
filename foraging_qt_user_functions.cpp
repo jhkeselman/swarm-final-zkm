@@ -1,5 +1,5 @@
 #include "foraging_qt_user_functions.h"
-#include <controllers/footbot_foraging/footbot_foraging.h>
+#include <footbot_foraging.h>
 #include <argos3/core/simulator/entity/controllable_entity.h>
 
 using namespace argos;

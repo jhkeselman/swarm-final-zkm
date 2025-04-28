@@ -6,6 +6,8 @@
 #include <argos3/core/utility/math/range.h>
 #include <argos3/core/utility/math/rng.h>
 
+#include "SFoodItem.h"
+
 using namespace argos;
 
 class CForagingLoopFunctions : public CLoopFunctions {

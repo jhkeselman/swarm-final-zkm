@@ -2,7 +2,7 @@
 #include <argos3/core/simulator/simulator.h>
 #include <argos3/core/utility/configuration/argos_configuration.h>
 #include <argos3/plugins/robots/foot-bot/simulator/footbot_entity.h>
-#include <controllers/footbot_foraging/footbot_foraging.h>
+#include <footbot_foraging.h>
 /* Logging */
 #include <argos3/core/utility/logging/argos_log.h>
 
@@ -186,16 +186,19 @@ void CForagingLoopFunctions::PreStep() {
             bool bDone = false;
             for(size_t i = 0; i < m_cFoodItems.size() && !bDone; ++i) {
                if((cPos - m_cFoodItems[i].Position).SquareLength() < m_fFoodSquareRadius) {
-                  /* If so, we move that item out of sight */
-                  m_cFoodItems[i].Position.Set(100.0f, 100.f);
-                  deleteFoodItem(i);
-                  /* The foot-bot is now carrying an item */
-                  sFoodData.HasFoodItem = true;
-                  sFoodData.FoodItemIdx = i;
-                  /* The floor texture must be updated */
-                  m_pcFloor->SetChanged();
-                  /* We are done */
-                  bDone = true;
+                  if(m_cFoodItems[i].Progress == 0) {
+                     /* If so, we move that item out of sight */
+                     m_cFoodItems[i].Position.Set(100.0f, 100.f);
+                     deleteFoodItem(i);
+                     /* The foot-bot is now carrying an item */
+                     sFoodData.HasFoodItem = true;
+                     sFoodData.FoodItemIdx = i;
+                     /* The floor texture must be updated */
+                     m_pcFloor->SetChanged();
+                     /* We are done */
+                     bDone = true;
+                  }
+                  m_cFoodItems[i].Progress--;
                }
             }
          }
@@ -247,7 +250,7 @@ void CForagingLoopFunctions::deleteFoodItem(int idx) {
       CFootBotForaging::SFoodData& sFoodData = cController.GetFoodData();
       
       // Populate each food structure with locations of all foods
-      sFoodData.m_cFoodPos.erase(sFoodData.m_cFoodPos.begin() + idx);
+      sFoodData.globalData.erase(sFoodData.globalData.begin() + idx);
    }
 }
 
