@@ -52,7 +52,10 @@ void CForagingLoopFunctions::Init(TConfigurationNode& t_node) {
                      m_pcRNG->Uniform(m_cForagingArenaSideY));
          } while(inRadius(samplePos, 0.25));
          
-         m_cFoodPos.push_back(samplePos);
+         SFoodItem sItem;
+         sItem.Position = samplePos;
+         sItem.Progress = 100; // 100 time steps
+         m_cFoodItems.push_back(sItem);
       }
       /* Get the output file name from XML */
       GetNodeAttribute(tForaging, "output", m_strOutput);
@@ -85,14 +88,14 @@ void CForagingLoopFunctions::Reset() {
    m_cOutput.open(m_strOutput.c_str(), std::ios_base::trunc | std::ios_base::out);
    m_cOutput << "# clock\twalking\tresting\tcollected_food\tenergy" << std::endl;
    /* Distribute uniformly the items in the environment */
-   for(UInt32 i = 0; i < m_cFoodPos.size(); ++i) {
+   for(UInt32 i = 0; i < m_cFoodItems.size(); ++i) {
       CVector2 samplePos;
       do {
          samplePos = CVector2(m_pcRNG->Uniform(m_cForagingArenaSideX),
                   m_pcRNG->Uniform(m_cForagingArenaSideY));
       } while(inRadius(samplePos, 0.25));
       
-      m_cFoodPos[i].Set(samplePos.GetX(),
+      m_cFoodItems[i].Position.Set(samplePos.GetX(),
                         samplePos.GetY());
    }
 
@@ -114,8 +117,8 @@ CColor CForagingLoopFunctions::GetFloorColor(const CVector2& c_position_on_plane
    if(inRadius(c_position_on_plane)) { // -1.0f
       return CColor::GRAY50;
    }
-   for(UInt32 i = 0; i < m_cFoodPos.size(); ++i) {
-      if((c_position_on_plane - m_cFoodPos[i]).SquareLength() < m_fFoodSquareRadius) {
+   for(UInt32 i = 0; i <  m_cFoodItems.size(); ++i) {
+      if((c_position_on_plane - m_cFoodItems[i].Position).SquareLength() < m_fFoodSquareRadius) {
          return CColor::BLACK;
       }
    }
@@ -181,10 +184,10 @@ void CForagingLoopFunctions::PreStep() {
          if(!inRadius(cPos)) {
             /* Check whether the foot-bot is on a food item */
             bool bDone = false;
-            for(size_t i = 0; i < m_cFoodPos.size() && !bDone; ++i) {
-               if((cPos - m_cFoodPos[i]).SquareLength() < m_fFoodSquareRadius) {
+            for(size_t i = 0; i < m_cFoodItems.size() && !bDone; ++i) {
+               if((cPos - m_cFoodItems[i].Position).SquareLength() < m_fFoodSquareRadius) {
                   /* If so, we move that item out of sight */
-                  m_cFoodPos[i].Set(100.0f, 100.f);
+                  m_cFoodItems[i].Position.Set(100.0f, 100.f);
                   deleteFoodItem(i);
                   /* The foot-bot is now carrying an item */
                   sFoodData.HasFoodItem = true;
@@ -224,7 +227,7 @@ void CForagingLoopFunctions::loadFood() {
       CFootBotForaging::SFoodData& sFoodData = cController.GetFoodData();
       
       // Populate each food structure with locations of all foods
-      sFoodData.m_cFoodPos = m_cFoodPos;
+      sFoodData.globalData = m_cFoodItems;
    }
 }
 

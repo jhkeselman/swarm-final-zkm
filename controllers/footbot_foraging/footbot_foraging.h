@@ -34,6 +34,7 @@
 /* Definitions for random number generation */
 #include <argos3/core/utility/math/rng.h>
 
+#include "SFoodItem.h"
 /*
  * All the ARGoS stuff in the 'argos' namespace.
  * With this statement, you save typing argos:: every time.
@@ -54,8 +55,7 @@ public:
       bool HasFoodItem;      // true when the robot is carrying a food item
       size_t FoodItemIdx;    // the index of the current food item in the array of available food items
       size_t TotalFoodItems; // the total number of food items carried by this robot during the experiment
-      std::vector<CVector2> m_cFoodPos; // position of all the food
-
+      std::vector<SFoodItem> globalData; // global food data
       SFoodData();
       void Reset();
    };

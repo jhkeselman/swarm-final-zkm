@@ -42,11 +42,11 @@ void CFootBotForaging::driveToGoal(CVector2 goal, CVector2 cDiffusion) {
 }
 
 CVector2 CFootBotForaging::selectFoodRandom() {
-   if (m_sFoodData.m_cFoodPos.empty()) {
+   if (m_sFoodData.globalData.empty()) {
       return CVector2(0.0f, 0.0f);
    }
-   UInt32 idx = m_pcRNG->Uniform(CRange<UInt32>(0.0, m_sFoodData.m_cFoodPos.size() - 1));
-   return m_sFoodData.m_cFoodPos[idx];
+   UInt32 idx = m_pcRNG->Uniform(CRange<UInt32>(0.0, m_sFoodData.globalData.size() - 1));
+   return m_sFoodData.globalData[idx].Position;
 }
 
 /****************************************/
@@ -61,7 +61,7 @@ void CFootBotForaging::SFoodData::Reset() {
    HasFoodItem = false;
    FoodItemIdx = 0;
    TotalFoodItems = 0;
-   m_cFoodPos.clear();
+   globalData.clear();
 }
 
 /****************************************/

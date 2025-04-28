@@ -27,7 +27,6 @@ private:
 
    Real m_fFoodSquareRadius;
    CRange<Real> m_cForagingArenaSideX, m_cForagingArenaSideY;
-   std::vector<CVector2> m_cFoodPos;
    CFloorEntity* m_pcFloor;
    CRandom::CRNG* m_pcRNG;
 
@@ -38,6 +37,8 @@ private:
    SInt64 m_nEnergy;
    UInt32 m_unEnergyPerFoodItem;
    UInt32 m_unEnergyPerWalkingRobot;
+
+  std::vector<SFoodItem> m_cFoodItems;
 };
 
 #endif
