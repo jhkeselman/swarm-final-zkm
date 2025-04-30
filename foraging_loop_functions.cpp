@@ -43,7 +43,7 @@ SFoodItem CForagingLoopFunctions::generateFoodItem() {
    SFoodItem sItem;
    sItem.Position = samplePos;
    sItem.Progress = 100; // 100 time steps
-   sItem.Reward = m_pcRNG->Uniform(CRange(0, 100));
+   sItem.Reward = m_pcRNG->Uniform(CRange<Real>(0, 100));
    sItem.Assigned = 0;
 
    return sItem;
@@ -63,9 +63,45 @@ void CForagingLoopFunctions::loadFood() {
 
       /* Get food data */
       CFootBotForaging::SFoodData& sFoodData = cController.GetFoodData();
+      
+      std::vector<CVector2> vec_pos;
+      //for each robot changed the assigned var corasponding to the new food items
+      //this will bug if they are not added to the end
+      for(int i  = 0 ; sFoodData.globalData.size() < i ; i++){
+         if(sFoodData.globalData[i].Assigned == 1){
+            vec_pos.push_back(sFoodData.globalData[i].Position);
+            //m_cFoodItems[assigned_idx].Assigned = 1;
+         }
+      }
+      //m_c vector
+      //vec_pos vector
+      for(int i = 0; m_cFoodItems.size() < i; i++){
+         for(int j = 0; vec_pos.size() < j ; j++){
+            CVector2 pos = vec_pos[j];
+            if(m_cFoodItems[i].Position == pos){
+               m_cFoodItems[i].Assigned = 1;
+            }
+         }
+      }
 
-      // Populate each food structure with locations of all foods
+      // std:shared_ptr<std::vector<SFoodItem> FoodItems_ptr = make_shared<SFoodItem>(m_cFoodItems);
+
+      // //std::shared_ptr<std::vector<SFoodItem>> m_cFoodItems = std::make_shared<std::vector<SFoodItem>>();
+
+
+      // // std::vector<SFoodItem*> globalData;
+      // // sFoodData.globalData.clear();
+      // // for (auto& item : m_cFoodItems) {
+      // //    sFoodData.globalData.push_back(&item);
+      // // }
+      // //shared_ptr<
+
+
+      // Populate each food structure with locations of all foods\
+
+      //copy everything
       sFoodData.globalData = m_cFoodItems;
+
       cController.timestep = argos::CSimulator::GetInstance().GetSpace().GetSimulationClock();
    }
 }

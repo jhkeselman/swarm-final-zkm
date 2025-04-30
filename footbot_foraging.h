@@ -242,6 +242,7 @@ public:
    inline SFoodData& GetFoodData() {
       return m_sFoodData;
    }
+   
 
 private:
 

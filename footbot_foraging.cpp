@@ -6,7 +6,7 @@
 #include <argos3/core/utility/math/vector2.h>
 /* Logging */
 #include <argos3/core/utility/logging/argos_log.h>
-
+#include <limits>
 void CFootBotForaging::driveToGoal(CVector2 goal, CVector2 cDiffusion) {
    CVector2 pos(m_pcPosition->GetReading().Position.GetX(),
                      m_pcPosition->GetReading().Position.GetY());
