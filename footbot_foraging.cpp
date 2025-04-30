@@ -6,7 +6,6 @@
 #include <argos3/core/utility/math/vector2.h>
 /* Logging */
 #include <argos3/core/utility/logging/argos_log.h>
-// Hi Ethan
 
 void CFootBotForaging::driveToGoal(CVector2 goal, CVector2 cDiffusion) {
    CVector2 pos(m_pcPosition->GetReading().Position.GetX(),
@@ -53,22 +52,17 @@ CVector2 CFootBotForaging::selectFoodClosest() {
       return CVector2(0.0f, 0.0f);
    }
    UInt32 idx = 0;
-   CVector2 position = m_sFoodData.localData[idx].Position;
 
    for (UInt32 i = 0; i < m_sFoodData.localData.size(); ++i) {
       if (m_sFoodData.localData[i].Assigned == 0 && m_sFoodData.localData[i].Position != CVector2(100.0f, 100.0f)) {
-         if (m_sFoodData.localData[i].Position != CVector2(100.0f, 100.0f)) {
-            LOG << "Leak" << std::endl;
-         }
-         if (m_sFoodData.localData[i].Position.Length() < position.Length()){
+         if (m_sFoodData.localData[i].Position.Length() < m_sFoodData.localData[idx].Position.Length()){
             idx = i;
-            position = m_sFoodData.localData[idx].Position;
          }
       }
    }
 
-   m_sFoodData.localData[idx].Assigned == 1;
-   return position;
+   m_sFoodData.localData[idx].Assigned = 1;
+   return m_sFoodData.localData[idx].Position;
 }
 
 CVector2 CFootBotForaging::selectFoodBestReward() {
@@ -91,7 +85,7 @@ CVector2 CFootBotForaging::selectFoodBestReward() {
       }
    }
 
-   m_sFoodData.localData[idx].Assigned == 1;
+   m_sFoodData.localData[idx].Assigned = 1;
    return position;
 }
 
@@ -471,8 +465,8 @@ void CFootBotForaging::Rest() {
          if(!locationSelected) {
             m_sFoodData.localData = m_sFoodData.globalData;
             // goal = selectFoodRandom();
-            goal = selectFoodClosest();
-            // goal = selectFoodBestReward();
+            // goal = selectFoodClosest();
+            goal = selectFoodBestReward();
             if (goal.GetX() == 0.0f && goal.GetY() == 0.0f) {
                LOG << "No food for me!" << std::endl;
                m_pcWheels->SetLinearVelocity(0.0f, 0.0f);

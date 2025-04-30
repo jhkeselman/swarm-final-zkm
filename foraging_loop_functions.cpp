@@ -44,6 +44,7 @@ SFoodItem CForagingLoopFunctions::generateFoodItem() {
    sItem.Position = samplePos;
    sItem.Progress = 100; // 100 time steps
    sItem.Reward = m_pcRNG->Uniform(CRange(0, 100));
+   sItem.Assigned = 0;
 
    return sItem;
 }
