@@ -43,7 +43,7 @@ SFoodItem CForagingLoopFunctions::generateFoodItem() {
    SFoodItem sItem;
    sItem.Position = samplePos;
    sItem.Progress = 100; // 100 time steps
-   sItem.Reward = m_pcRNG->Uniform(CRange(0, 1000));
+   sItem.Reward = m_pcRNG->Uniform(CRange(0, 100));
 
    return sItem;
 }
@@ -244,6 +244,8 @@ void CForagingLoopFunctions::PreStep() {
                   if(m_cFoodItems[i].Progress == 0) {
                      /* If so, we move that item out of sight */
                      m_cFoodItems[i].Position.Set(100.0f, 100.f);
+                     totalReward += m_cFoodItems[i].Reward;
+                     LOG << "Total Reward: " << totalReward << std::endl;
                      deleteFoodItem(i);
                      /* The foot-bot is now carrying an item */
                      sFoodData.HasFoodItem = true;

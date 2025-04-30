@@ -36,7 +36,7 @@ CVector2 CFootBotForaging::selectFoodRandom() {
       return CVector2(0.0f, 0.0f);
    }
    CVector2 position = CVector2(100.0f, 100.0f);
-   while (position.GetX() == 100.0f && position.GetY() == 100.0f) {
+   while (position == CVector2(100.0f, 100.0f)) {
       UInt32 idx = m_pcRNG->Uniform(CRange<UInt32>(0.0, m_sFoodData.localData.size() - 1));
       position = m_sFoodData.localData[idx].Position;
    }
@@ -419,7 +419,6 @@ void CFootBotForaging::Rest() {
          }
          if(!locationSelected) {
             m_sFoodData.localData = m_sFoodData.globalData;
-            LOG << m_sFoodData.localData.size() << std::endl;
             goal = selectFoodRandom();
             if (goal.GetX() == 0.0f && goal.GetY() == 0.0f) {
                LOG << "No food for me!" << std::endl;
@@ -427,7 +426,7 @@ void CFootBotForaging::Rest() {
                stillFood = false;
             }
             else {
-               LOG << goal << std::endl;
+               LOG << "Goal: " << goal << std::endl;
                locationSelected = true;
                m_pcLEDs->SetAllColors(CColor::GREEN);
                m_sStateData.State = SStateData::STATE_EXPLORING;

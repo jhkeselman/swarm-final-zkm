@@ -41,7 +41,8 @@ private:
    UInt32 m_unEnergyPerFoodItem;
    UInt32 m_unEnergyPerWalkingRobot;
 
-  std::vector<SFoodItem> m_cFoodItems;
+   std::vector<SFoodItem> m_cFoodItems;
+   int totalReward;
 };
 
 #endif
