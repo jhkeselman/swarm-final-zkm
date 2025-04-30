@@ -56,6 +56,7 @@ public:
       size_t FoodItemIdx;    // the index of the current food item in the array of available food items
       size_t TotalFoodItems; // the total number of food items carried by this robot during the experiment
       std::vector<SFoodItem> globalData; // global food data
+      std::vector<SFoodItem> localData; // local food data
       SFoodData();
       void Reset();
    };

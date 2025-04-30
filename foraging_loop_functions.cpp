@@ -124,9 +124,6 @@ void CForagingLoopFunctions::Init(TConfigurationNode& t_node) {
       GetNodeAttribute(tForaging, "energy_per_item", m_unEnergyPerFoodItem);
       /* Get energy loss per walking robot */
       GetNodeAttribute(tForaging, "energy_per_walking_robot", m_unEnergyPerWalkingRobot);
-
-      // Assign food positions for each robot
-      loadFood();
    }
    catch(CARGoSException& ex) {
       THROW_ARGOSEXCEPTION_NESTED("Error parsing loop functions!", ex);
@@ -282,6 +279,7 @@ void CForagingLoopFunctions::PreStep() {
       m_cFoodItems.push_back(sItem);
       m_pcFloor->SetChanged();
    }
+   loadFood();
 }
 
 /****************************************/

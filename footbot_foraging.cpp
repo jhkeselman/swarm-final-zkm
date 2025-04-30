@@ -32,11 +32,11 @@ void CFootBotForaging::driveToGoal(CVector2 goal, CVector2 cDiffusion) {
 }
 
 CVector2 CFootBotForaging::selectFoodRandom() {
-   if (m_sFoodData.globalData.empty()) {
+   if (m_sFoodData.localData.empty()) {
       return CVector2(0.0f, 0.0f);
    }
-   UInt32 idx = m_pcRNG->Uniform(CRange<UInt32>(0.0, m_sFoodData.globalData.size() - 1));
-   return m_sFoodData.globalData[idx].Position;
+   UInt32 idx = m_pcRNG->Uniform(CRange<UInt32>(0.0, m_sFoodData.localData.size() - 1));
+   return m_sFoodData.localData[idx].Position;
 }
 
 /****************************************/
@@ -414,6 +414,8 @@ void CFootBotForaging::Rest() {
             }
          }
          if(!locationSelected) {
+            m_sFoodData.localData = m_sFoodData.globalData;
+            LOG << m_sFoodData.localData.size() << std::endl;
             goal = selectFoodRandom();
             if (goal.GetX() == 0.0f && goal.GetY() == 0.0f) {
                LOG << "No food for me!" << std::endl;
