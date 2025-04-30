@@ -269,6 +269,18 @@ void CForagingLoopFunctions::PreStep() {
              << unRestingFBs << "\t"
              << m_unCollectedFood << "\t"
              << m_nEnergy << std::endl;
+   
+   /*
+   * CHECK IF NEW FOOD NEEDS TO BE POPULATED
+   */
+   int tStep = argos::CSimulator::GetInstance().GetSpace().GetSimulationClock();
+   // Every few time steps update
+   int recurrance = 50;
+   if(tStep % recurrance == 0) {
+      SFoodItem sItem = generateFoodItem();
+      m_cFoodItems.push_back(sItem);
+      m_pcFloor->SetChanged();
+   }
 }
 
 /****************************************/
