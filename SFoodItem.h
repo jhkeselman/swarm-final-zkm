@@ -11,4 +11,5 @@ using namespace argos;
 struct SFoodItem {
     CVector2 Position;
     int Progress;
+    int Reward;
 };
