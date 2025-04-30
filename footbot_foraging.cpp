@@ -24,6 +24,11 @@ void CFootBotForaging::driveToGoal(CVector2 goal, CVector2 cDiffusion) {
 
    CVector2 turn_vec(1.0, angle_diff);
    SetWheelSpeedsFromVector(turn_vec * m_sWheelTurningParams.MaxSpeed);
+
+   float distance_thresh = 0.02;
+   if(diff.Length() < distance_thresh) {
+      m_pcLEDs->SetAllColors(CColor::ORANGE);
+   }
 }
 
 CVector2 CFootBotForaging::selectFoodRandom() {
