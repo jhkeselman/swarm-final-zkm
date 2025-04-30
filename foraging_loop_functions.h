@@ -24,6 +24,7 @@ public:
    virtual void PreStep();
    void loadFood();
    void deleteFoodItem(int idx);
+   SFoodItem generateFoodItem();
 
 private:
 

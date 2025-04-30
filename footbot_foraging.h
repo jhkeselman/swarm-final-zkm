@@ -338,14 +338,6 @@ private:
    CRadians last_diff;
    CRadians angle_integral;
    bool stillFood = true;
-
-   enum State {
-      TURNING_TO_GOAL,
-      DRIVING_TO_GOAL
-   };
-  
-   State drive_state = TURNING_TO_GOAL;
-
 };
 
 #endif

@@ -21,24 +21,9 @@ void CFootBotForaging::driveToGoal(CVector2 goal, CVector2 cDiffusion) {
    orientation.ToEulerAngles(heading, pitch, roll);
 
    CRadians angle_diff = goal_angle - heading;
-   
-   float angle_threshold = M_PI / 32;
-   switch (drive_state) {
-      case TURNING_TO_GOAL:
-         // If the robot is within the angle threshold, transition to driving
-         // LOG << "diff: " << diff << "\nghead: " << (goal_angle* CRadians::RADIANS_TO_DEGREES).GetValue() << "\nhead: " << (heading* CRadians::RADIANS_TO_DEGREES).GetValue() << "\nerror: " << (angle_diff * CRadians::RADIANS_TO_DEGREES).GetValue() << std::endl;
-         if (angle_diff.GetAbsoluteValue() < angle_threshold) {
-            drive_state = DRIVING_TO_GOAL;
-         } else {
-            CVector2 turn_vec(1.0, angle_diff);  // Unit length in angle_diff direction
-            SetWheelSpeedsFromVector(turn_vec * m_sWheelTurningParams.MaxSpeed);
-         }
-         break;
 
-      case DRIVING_TO_GOAL:
-         SetWheelSpeedsFromVector(diff + cDiffusion * m_sWheelTurningParams.MaxSpeed);
-         break;
-   }
+   CVector2 turn_vec(1.0, angle_diff);
+   SetWheelSpeedsFromVector(turn_vec * m_sWheelTurningParams.MaxSpeed);
 }
 
 CVector2 CFootBotForaging::selectFoodRandom() {
@@ -233,7 +218,6 @@ void CFootBotForaging::Reset() {
    m_eLastExplorationResult = LAST_EXPLORATION_NONE;
    m_pcRABA->ClearData();
    m_pcRABA->SetData(0, LAST_EXPLORATION_NONE);
-   drive_state = TURNING_TO_GOAL;
 }
 
 /****************************************/
@@ -471,7 +455,6 @@ void CFootBotForaging::ExploreRandom() {
       /* Switch to 'return to nest' */
       bReturnToNest = true;
       locationSelected = false;
-      drive_state = TURNING_TO_GOAL;
    }
    /* So, do we return to the nest now? */
    if(bReturnToNest) {
