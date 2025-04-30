@@ -47,6 +47,50 @@ CVector2 CFootBotForaging::selectFoodRandom() {
    return position;
 }
 
+CVector2 CFootBotForaging::selectFoodClosest() {
+   if (m_sFoodData.localData.empty()) {
+      return CVector2(0.0f, 0.0f);
+   }
+   UInt32 idx = 0;
+   CVector2 position = m_sFoodData.localData[idx].Position;
+
+   for (UInt32 i = 0; i < m_sFoodData.localData.size(); ++i) {
+      if (m_sFoodData.localData[i].Assigned == 0 && m_sFoodData.localData[i].Position != CVector2(100.0f, 100.0f)) {
+         if (m_sFoodData.localData[i].Position.Length() < position.Length()){
+            idx = i;
+            position = m_sFoodData.localData[idx].Position;
+         }
+      }
+   }
+
+   m_sFoodData.localData[idx].Assigned == 1;
+   return position;
+}
+
+CVector2 CFootBotForaging::selectFoodBestReward() {
+   if (m_sFoodData.localData.empty()) {
+      return CVector2(0.0f, 0.0f);
+   }
+
+   UInt32 idx = 0;
+   float maxReward = -std::numeric_limits<float>::infinity();
+   CVector2 position;
+
+   for (UInt32 i = 0; i < m_sFoodData.localData.size(); ++i) {
+      if (m_sFoodData.localData[i].Assigned == 0 && m_sFoodData.localData[i].Position != CVector2(100.0f, 100.0f)) {
+         float reward = m_sFoodData.localData[i].Reward;
+         if (reward > maxReward) {
+               maxReward = reward;
+               idx = i;
+               position = m_sFoodData.localData[idx].Position;
+         }
+      }
+   }
+
+   m_sFoodData.localData[idx].Assigned == 1;
+   return position;
+}
+
 /****************************************/
 /****************************************/
 
@@ -203,8 +247,7 @@ void CFootBotForaging::ControlStep() {
          break;
       }
       case SStateData::STATE_EXPLORING: {
-         // Explore();
-         ExploreRandom();
+         Explore();
          break;
       }
       case SStateData::STATE_RETURN_TO_NEST: {
@@ -423,7 +466,9 @@ void CFootBotForaging::Rest() {
          }
          if(!locationSelected) {
             m_sFoodData.localData = m_sFoodData.globalData;
-            goal = selectFoodRandom();
+            // goal = selectFoodRandom();
+            goal = selectFoodClosest();
+            // goal = selectFoodBestReward();
             if (goal.GetX() == 0.0f && goal.GetY() == 0.0f) {
                LOG << "No food for me!" << std::endl;
                m_pcWheels->SetLinearVelocity(0.0f, 0.0f);
@@ -445,7 +490,7 @@ void CFootBotForaging::Rest() {
 /****************************************/
 /****************************************/
 
-void CFootBotForaging::ExploreRandom() {
+void CFootBotForaging::Explore() {
    /* We switch to 'return to nest' in two situations:
     * 1. if we have a food item
     * 2. if we have not found a food item for some time;

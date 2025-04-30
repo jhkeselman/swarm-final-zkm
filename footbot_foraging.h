@@ -287,11 +287,13 @@ private:
     */
    void ReturnToNest();
 
-   void ExploreRandom();
-
    void driveToGoal(CVector2 goal, CVector2 cDiffusion); 
 
    CVector2 selectFoodRandom();
+
+   CVector2 selectFoodClosest();
+
+   CVector2 selectFoodBestReward();
 
 private:
 
