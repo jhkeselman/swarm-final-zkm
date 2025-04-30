@@ -43,7 +43,7 @@ CVector2 CFootBotForaging::selectFoodRandom() {
       position = m_sFoodData.localData[idx].Position;
    } while(position == CVector2(100.0f, 100.0f) && m_sFoodData.localData[idx].Assigned == 0);
 
-   m_sFoodData.localData[idx].Assigned == 1;
+   m_sFoodData.localData[idx].Assigned = 1;
    return position;
 }
 
@@ -464,21 +464,24 @@ void CFootBotForaging::Rest() {
          }
          if(!locationSelected) {
             m_sFoodData.localData = m_sFoodData.globalData;
-            // goal = selectFoodRandom();
-            // goal = selectFoodClosest();
-            goal = selectFoodBestReward();
-            if (goal.GetX() == 0.0f && goal.GetY() == 0.0f) {
-               LOG << "No food for me!" << std::endl;
-               m_pcWheels->SetLinearVelocity(0.0f, 0.0f);
-               stillFood = false;
-            }
-            else {
-               LOG << "Goal: " << goal << std::endl;
-               locationSelected = true;
-               m_pcLEDs->SetAllColors(CColor::GREEN);
-               m_sStateData.State = SStateData::STATE_EXPLORING;
-               m_sStateData.TimeRested = 0;
-               stillFood = true;
+            LOG << timestep << " " << std::stoi(GetId().substr(2)) + 1 << std::endl;
+            if(timestep >= std::stoi(GetId().substr(2)) + 1) {
+               goal = selectFoodRandom();
+               // goal = selectFoodClosest();
+               // goal = selectFoodBestReward();
+               if (goal.GetX() == 0.0f && goal.GetY() == 0.0f) {
+                  LOG << "No food for me!" << std::endl;
+                  m_pcWheels->SetLinearVelocity(0.0f, 0.0f);
+                  stillFood = false;
+               }
+               else {
+                  LOG << "Goal: " << goal << std::endl;
+                  locationSelected = true;
+                  m_pcLEDs->SetAllColors(CColor::GREEN);
+                  m_sStateData.State = SStateData::STATE_EXPLORING;
+                  m_sStateData.TimeRested = 0;
+                  stillFood = true;
+               }
             }
          }
       }

@@ -66,6 +66,7 @@ void CForagingLoopFunctions::loadFood() {
       
       // Populate each food structure with locations of all foods
       sFoodData.globalData = m_cFoodItems;
+      cController.timestep = argos::CSimulator::GetInstance().GetSpace().GetSimulationClock();
    }
 }
 

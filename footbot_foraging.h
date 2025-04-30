@@ -61,6 +61,8 @@ public:
       void Reset();
    };
 
+   int timestep;
+
    /*
     * The following variables are used as parameters for the
     * diffusion algorithm. You can set their value in the <parameters>
