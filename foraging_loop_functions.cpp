@@ -63,7 +63,7 @@ void CForagingLoopFunctions::loadFood() {
 
       /* Get food data */
       CFootBotForaging::SFoodData& sFoodData = cController.GetFoodData();
-      
+
       // Populate each food structure with locations of all foods
       sFoodData.globalData = m_cFoodItems;
       cController.timestep = argos::CSimulator::GetInstance().GetSpace().GetSimulationClock();

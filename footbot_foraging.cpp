@@ -464,7 +464,11 @@ void CFootBotForaging::Rest() {
          }
          if(!locationSelected) {
             m_sFoodData.localData = m_sFoodData.globalData;
-            LOG << timestep << " " << std::stoi(GetId().substr(2)) + 1 << std::endl;
+            // LOG << timestep << " " << std::stoi(GetId().substr(2)) + 1 << std::endl;
+
+            for(SFoodItem i : m_sFoodData.localData) {
+               LOG << i.Position << " " << i.Assigned << std::endl;
+            }
             if(timestep >= std::stoi(GetId().substr(2)) + 1) {
                goal = selectFoodRandom();
                // goal = selectFoodClosest();
