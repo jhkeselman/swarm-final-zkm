@@ -6,6 +6,7 @@
 #include <argos3/core/utility/math/vector2.h>
 /* Logging */
 #include <argos3/core/utility/logging/argos_log.h>
+// Hi Ethan
 
 void CFootBotForaging::driveToGoal(CVector2 goal, CVector2 cDiffusion) {
    CVector2 pos(m_pcPosition->GetReading().Position.GetX(),
@@ -56,6 +57,9 @@ CVector2 CFootBotForaging::selectFoodClosest() {
 
    for (UInt32 i = 0; i < m_sFoodData.localData.size(); ++i) {
       if (m_sFoodData.localData[i].Assigned == 0 && m_sFoodData.localData[i].Position != CVector2(100.0f, 100.0f)) {
+         if (m_sFoodData.localData[i].Position != CVector2(100.0f, 100.0f)) {
+            LOG << "Leak" << std::endl;
+         }
          if (m_sFoodData.localData[i].Position.Length() < position.Length()){
             idx = i;
             position = m_sFoodData.localData[idx].Position;
