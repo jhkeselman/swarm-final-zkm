@@ -36,10 +36,14 @@ CVector2 CFootBotForaging::selectFoodRandom() {
       return CVector2(0.0f, 0.0f);
    }
    CVector2 position = CVector2(100.0f, 100.0f);
-   while (position == CVector2(100.0f, 100.0f)) {
-      UInt32 idx = m_pcRNG->Uniform(CRange<UInt32>(0.0, m_sFoodData.localData.size() - 1));
+   UInt32 idx = -1;
+
+   do {
+      idx = m_pcRNG->Uniform(CRange<UInt32>(0.0, m_sFoodData.localData.size() - 1));
       position = m_sFoodData.localData[idx].Position;
-   }
+   } while(position == CVector2(100.0f, 100.0f) && m_sFoodData.localData[idx].Assigned == 0);
+
+   m_sFoodData.localData[idx].Assigned == 1;
    return position;
 }
 
