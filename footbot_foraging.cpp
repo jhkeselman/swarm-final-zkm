@@ -35,16 +35,13 @@ CVector2 CFootBotForaging::selectFoodRandom() {
    if (m_sFoodData.localData.empty()) {
       return CVector2(0.0f, 0.0f);
    }
-   CVector2 position = CVector2(100.0f, 100.0f);
-   UInt32 idx = -1;
-
-   do {
+   UInt32 idx = m_pcRNG->Uniform(CRange<UInt32>(0.0, m_sFoodData.localData.size() - 1));
+   while(m_sFoodData.localData[idx].Assigned == 1 || m_sFoodData.localData[idx].Position == CVector2(100.0f, 100.0f)) {
       idx = m_pcRNG->Uniform(CRange<UInt32>(0.0, m_sFoodData.localData.size() - 1));
-      position = m_sFoodData.localData[idx].Position;
-   } while(position == CVector2(100.0f, 100.0f) && m_sFoodData.localData[idx].Assigned == 0);
+   }
 
    m_sFoodData.localData[idx].Assigned = 1;
-   return position;
+   return m_sFoodData.localData[idx].Position;
 }
 
 CVector2 CFootBotForaging::selectFoodClosest() {
@@ -55,7 +52,7 @@ CVector2 CFootBotForaging::selectFoodClosest() {
 
    for (UInt32 i = 0; i < m_sFoodData.localData.size(); ++i) {
       if (m_sFoodData.localData[i].Assigned == 0 && m_sFoodData.localData[i].Position != CVector2(100.0f, 100.0f)) {
-         if (m_sFoodData.localData[i].Position.Length() < m_sFoodData.localData[idx].Position.Length()){
+         if (m_sFoodData.localData[i].Position.Length() < m_sFoodData.localData[idx].Position.Length() || m_sFoodData.localData[idx].Assigned == 1){
             idx = i;
          }
       }
@@ -77,7 +74,7 @@ CVector2 CFootBotForaging::selectFoodBestReward() {
    for (UInt32 i = 0; i < m_sFoodData.localData.size(); ++i) {
       if (m_sFoodData.localData[i].Assigned == 0 && m_sFoodData.localData[i].Position != CVector2(100.0f, 100.0f)) {
          float reward = m_sFoodData.localData[i].Reward;
-         if (reward > maxReward) {
+         if (reward > maxReward || m_sFoodData.localData[idx].Assigned == 1) {
                maxReward = reward;
                idx = i;
                position = m_sFoodData.localData[idx].Position;
@@ -464,12 +461,9 @@ void CFootBotForaging::Rest() {
          }
          if(!locationSelected) {
             m_sFoodData.localData = m_sFoodData.globalData;
-            // LOG << timestep << " " << std::stoi(GetId().substr(2)) + 1 << std::endl;
 
-            for(SFoodItem i : m_sFoodData.localData) {
-               LOG << i.Position << " " << i.Assigned << std::endl;
-            }
             if(timestep >= std::stoi(GetId().substr(2)) + 1) {
+               LOG << "Assigned at timestep: " << timestep << std::endl;
                goal = selectFoodRandom();
                // goal = selectFoodClosest();
                // goal = selectFoodBestReward();
