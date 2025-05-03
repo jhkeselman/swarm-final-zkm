@@ -22,8 +22,13 @@ public:
    virtual void Destroy();
    virtual CColor GetFloorColor(const CVector2& c_position_on_plane);
    virtual void PreStep();
+
+   /* NEW FUNCTIONS */
+   // Populate global food information to local data structures
    void loadFood();
+   // Remove a food item from being tracked
    void deleteFoodItem(int idx);
+   // Create a food item
    SFoodItem generateFoodItem();
 
 private:
@@ -41,7 +46,10 @@ private:
    UInt32 m_unEnergyPerFoodItem;
    UInt32 m_unEnergyPerWalkingRobot;
 
+   /* NEW FIELDS */
+   // Global data structure of food item data
    std::vector<SFoodItem> m_cFoodItems;
+   // Total reward across all foot-bots
    int totalReward;
 };
 

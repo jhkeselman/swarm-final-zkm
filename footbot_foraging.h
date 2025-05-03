@@ -55,12 +55,13 @@ public:
       bool HasFoodItem;      // true when the robot is carrying a food item
       size_t FoodItemIdx;    // the index of the current food item in the array of available food items
       size_t TotalFoodItems; // the total number of food items carried by this robot during the experiment
-      std::vector<SFoodItem> globalData; // global food data
-      std::vector<SFoodItem> localData; // local food data
+      std::vector<SFoodItem> globalData; // global food data (OUR CHANGE)
+      std::vector<SFoodItem> localData; // local food data (OUR CHANGE)
       SFoodData();
       void Reset();
    };
 
+   // Current timestep of sim (OUR CHANGE)
    int timestep;
 
    /*
@@ -290,12 +291,20 @@ private:
     */
    void ReturnToNest();
 
+   /*
+    * OUR FUNCTIONS
+   */
+
+   // Input a goal and diffusion vector to drive to a point
    void driveToGoal(CVector2 goal, CVector2 cDiffusion); 
 
+   // Select a food item according to a uniform random distribution
    CVector2 selectFoodRandom();
 
+   // Select the closest unassigned food item
    CVector2 selectFoodClosest();
 
+   // Select the highest rewarding unassigned food item
    CVector2 selectFoodBestReward();
 
 private:
@@ -337,12 +346,16 @@ private:
    /* The food data */
    SFoodData m_sFoodData;
 
+
+   /*
+    * OUR FIELDS
+   */
+
+   // Goal vector
    CVector2 goal;
 
+   // Has a location been selected or is there still food?
    bool locationSelected = false;
-
-   CRadians last_diff;
-   CRadians angle_integral;
    bool stillFood = true;
 };
 
