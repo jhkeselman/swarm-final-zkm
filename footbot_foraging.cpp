@@ -510,8 +510,8 @@ void CFootBotForaging::Rest() {
             if(timestep >= std::stoi(GetId().substr(2)) + 1) {
                LOG << "Assigned at timestep: " << timestep << std::endl;
                // Select a food according to these functions
-               goal = selectFoodRandom();
-               // goal = selectFoodClosest();
+               // goal = selectFoodRandom();
+               goal = selectFoodClosest();
                // goal = selectFoodBestReward();
 
                // If a zero vector is returned, no food left!
@@ -562,7 +562,7 @@ void CFootBotForaging::Explore() {
       /* Switch to 'return to nest' */
       bReturnToNest = true;
 
-      // We're back with food, we need more food
+      // We're coming back with food, we need more food (OUR CODE)
       locationSelected = false;
    }
    /* So, do we return to the nest now? */
@@ -589,16 +589,8 @@ void CFootBotForaging::Explore() {
          m_sStateData.RestToExploreProb -= m_sStateData.CollisionRuleExploreToRestDeltaProb;
          m_sStateData.ProbRange.TruncValue(m_sStateData.RestToExploreProb);
       }
-      /*
-       * If we are in the nest, we combine antiphototaxis with obstacle
-       * avoidance
-       * Outside the nest, we just use the diffusion vector
-       */
-
-      // We don't necessarily have a new location, since we're focused on the current one
-      locationSelected = false;
       
-      // Drive to the goal
+      // Drive to the goal (OUR CODE)
       driveToGoal(goal, cDiffusion);
    }
 }
