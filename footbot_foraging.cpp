@@ -7,74 +7,114 @@
 /* Logging */
 #include <argos3/core/utility/logging/argos_log.h>
 #include <limits>
+
+/*
+ * Command the footbot to drive to a goal
+*/
 void CFootBotForaging::driveToGoal(CVector2 goal, CVector2 cDiffusion) {
+   // The current x, y position
    CVector2 pos(m_pcPosition->GetReading().Position.GetX(),
                      m_pcPosition->GetReading().Position.GetY());
-
+   // Difference vector between goal and position
    CVector2 diff = (goal - pos);
 
+   // Computed as a signed normalized angle
    CRadians goal_angle = diff.Angle();
    goal_angle.SignedNormalize();
-      
+   
+   // Get the current heading of the robot (to be used later)
    CRadians heading, pitch, roll;
    CQuaternion orientation = m_pcPosition->GetReading().Orientation;
    orientation.ToEulerAngles(heading, pitch, roll);
 
+   // Calculate the heading error
    CRadians angle_diff = goal_angle - heading;
 
+   // Convert this into a turning vector and use given function
    CVector2 turn_vec(1.0, angle_diff);
    SetWheelSpeedsFromVector(turn_vec * m_sWheelTurningParams.MaxSpeed);
 
+   // If we're close enough on the food item, make the footbot orange (changing states soon)
    float distance_thresh = 0.02;
    if(diff.Length() < distance_thresh) {
       m_pcLEDs->SetAllColors(CColor::ORANGE);
    }
 }
 
+/*
+ * Select a food item according to a uniform random distribution
+*/
 CVector2 CFootBotForaging::selectFoodRandom() {
+   // If there's no food to get, return a zero vector
    if (m_sFoodData.localData.empty()) {
       return CVector2(0.0f, 0.0f);
    }
+
+   // Choose a random index based on the size of the local data structure
    UInt32 idx = m_pcRNG->Uniform(CRange<UInt32>(0.0, m_sFoodData.localData.size() - 1));
+
+   // While an unassigned, in bounds food item has yet to be chosen
    while(m_sFoodData.localData[idx].Assigned == 1 || m_sFoodData.localData[idx].Position == CVector2(100.0f, 100.0f)) {
+      // Sample again
       idx = m_pcRNG->Uniform(CRange<UInt32>(0.0, m_sFoodData.localData.size() - 1));
    }
 
+   // Claim this food item (selected) and return it's position
    m_sFoodData.localData[idx].Assigned = 1;
    return m_sFoodData.localData[idx].Position;
 }
 
+/*
+ * Select the closest unassigned food item
+*/
 CVector2 CFootBotForaging::selectFoodClosest() {
+   // If there's no food to get, return a zero vector
    if (m_sFoodData.localData.empty()) {
       return CVector2(0.0f, 0.0f);
    }
+
+   // Initialize this to zero
    UInt32 idx = 0;
 
+   // For each food item
    for (UInt32 i = 0; i < m_sFoodData.localData.size(); ++i) {
+      // If it's available
       if (m_sFoodData.localData[i].Assigned == 0 && m_sFoodData.localData[i].Position != CVector2(100.0f, 100.0f)) {
+         // If it's closer than previously determined, select it
          if (m_sFoodData.localData[i].Position.Length() < m_sFoodData.localData[idx].Position.Length() || m_sFoodData.localData[idx].Assigned == 1){
             idx = i;
          }
       }
    }
 
+   // Claim this food item (selected) and return it's position
    m_sFoodData.localData[idx].Assigned = 1;
    return m_sFoodData.localData[idx].Position;
 }
 
+/*
+ * Select the highest rewarding unassigned food item
+*/
 CVector2 CFootBotForaging::selectFoodBestReward() {
+   // If there's no food to get, return a zero vector
    if (m_sFoodData.localData.empty()) {
       return CVector2(0.0f, 0.0f);
    }
 
+   // Initialize variables
    UInt32 idx = 0;
    float maxReward = -std::numeric_limits<float>::infinity();
    CVector2 position;
 
+   // For each food item
    for (UInt32 i = 0; i < m_sFoodData.localData.size(); ++i) {
+      // If it's available
       if (m_sFoodData.localData[i].Assigned == 0 && m_sFoodData.localData[i].Position != CVector2(100.0f, 100.0f)) {
+         // Get the reward
          float reward = m_sFoodData.localData[i].Reward;
+         // If the reward is better then the max reward
          if (reward > maxReward || m_sFoodData.localData[idx].Assigned == 1) {
+               // Choose this so far
                maxReward = reward;
                idx = i;
                position = m_sFoodData.localData[idx].Position;
@@ -82,6 +122,7 @@ CVector2 CFootBotForaging::selectFoodBestReward() {
       }
    }
 
+   // Claim this food item (selected) and return it's position
    m_sFoodData.localData[idx].Assigned = 1;
    return position;
 }
@@ -459,26 +500,34 @@ void CFootBotForaging::Rest() {
                }
             }
          }
+         
+         // If a location has not been selected (OUR CODE)
          if(!locationSelected) {
+            // Update the local information with new global knowledge (since we're in the nest)
             m_sFoodData.localData = m_sFoodData.globalData;
-
+            
+            // For initialization, if the timestep is GEQ robot id, select an item (really only applies first few time steps)
             if(timestep >= std::stoi(GetId().substr(2)) + 1) {
                LOG << "Assigned at timestep: " << timestep << std::endl;
+               // Select a food according to these functions
                goal = selectFoodRandom();
                // goal = selectFoodClosest();
                // goal = selectFoodBestReward();
+
+               // If a zero vector is returned, no food left!
                if (goal.GetX() == 0.0f && goal.GetY() == 0.0f) {
                   LOG << "No food for me!" << std::endl;
                   m_pcWheels->SetLinearVelocity(0.0f, 0.0f);
-                  stillFood = false;
+                  stillFood = false; // The food is all gone
                }
                else {
                   LOG << "Goal: " << goal << std::endl;
+                  // We have a location, go towards the food (exploring state)
                   locationSelected = true;
                   m_pcLEDs->SetAllColors(CColor::GREEN);
                   m_sStateData.State = SStateData::STATE_EXPLORING;
                   m_sStateData.TimeRested = 0;
-                  stillFood = true;
+                  stillFood = true; // There is still food out there
                }
             }
          }
@@ -512,6 +561,8 @@ void CFootBotForaging::Explore() {
       m_eLastExplorationResult = LAST_EXPLORATION_SUCCESSFUL;
       /* Switch to 'return to nest' */
       bReturnToNest = true;
+
+      // We're back with food, we need more food
       locationSelected = false;
    }
    /* So, do we return to the nest now? */
@@ -543,7 +594,11 @@ void CFootBotForaging::Explore() {
        * avoidance
        * Outside the nest, we just use the diffusion vector
        */
+
+      // We don't necessarily have a new location, since we're focused on the current one
       locationSelected = false;
+      
+      // Drive to the goal
       driveToGoal(goal, cDiffusion);
    }
 }
