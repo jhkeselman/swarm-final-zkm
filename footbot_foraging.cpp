@@ -15,24 +15,32 @@ void CFootBotForaging::driveToGoal(CVector2 goal, CVector2 cDiffusion) {
    // The current x, y position
    CVector2 pos(m_pcPosition->GetReading().Position.GetX(),
                      m_pcPosition->GetReading().Position.GetY());
-   // Difference vector between goal and position
-   CVector2 diff = (goal - pos);
 
-   // Computed as a signed normalized angle
-   CRadians goal_angle = diff.Angle();
-   goal_angle.SignedNormalize();
-   
-   // Get the current heading of the robot (to be used later)
    CRadians heading, pitch, roll;
    CQuaternion orientation = m_pcPosition->GetReading().Orientation;
    orientation.ToEulerAngles(heading, pitch, roll);
+  
+   // Difference vector between goal and position
+   CVector2 diff = (goal - pos);
+
+   CVector2 d(diff.GetX(), diff.GetY());
+   d.Rotate(-heading);  // rotate to robot-local frame
+   SetWheelSpeedsFromVector(d * m_sWheelTurningParams.MaxSpeed);
+
+   // Computed as a signed normalized angle
+   // CRadians goal_angle = diff.Angle();
+   // goal_angle.SignedNormalize();
+   
+   // Get the current heading of the robot (to be used later)
+   
 
    // Calculate the heading error
-   CRadians angle_diff = goal_angle - heading;
+   // CRadians angle_diff = goal_angle - heading;
 
    // Convert this into a turning vector and use given function
-   CVector2 turn_vec(1.0, angle_diff);
-   SetWheelSpeedsFromVector(turn_vec * m_sWheelTurningParams.MaxSpeed);
+   // CVector2 turn_vec(1.0, angle_diff);
+   // SetWheelSpeedsFromVector(turn_vec * m_sWheelTurningParams.MaxSpeed);
+
 
    // If we're close enough on the food item, make the footbot orange (changing states soon)
    float distance_thresh = 0.02;
