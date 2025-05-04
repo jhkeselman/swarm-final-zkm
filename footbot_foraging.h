@@ -363,7 +363,7 @@ private:
 
    // When was the last time I got new information?
    int lastInformationUpdate;
-   int currSingleReward;
+   int currFoodIdx;
 };
 
 #endif

@@ -27,21 +27,6 @@ void CFootBotForaging::driveToGoal(CVector2 goal, CVector2 cDiffusion) {
    d.Rotate(-heading);  // rotate to robot-local frame
    SetWheelSpeedsFromVector(d * m_sWheelTurningParams.MaxSpeed);
 
-   // Computed as a signed normalized angle
-   // CRadians goal_angle = diff.Angle();
-   // goal_angle.SignedNormalize();
-   
-   // Get the current heading of the robot (to be used later)
-   
-
-   // Calculate the heading error
-   // CRadians angle_diff = goal_angle - heading;
-
-   // Convert this into a turning vector and use given function
-   // CVector2 turn_vec(1.0, angle_diff);
-   // SetWheelSpeedsFromVector(turn_vec * m_sWheelTurningParams.MaxSpeed);
-
-
    // If we're close enough on the food item, make the footbot orange (changing states soon)
    float distance_thresh = 0.1;
    if(diff.Length() < distance_thresh) {
@@ -69,7 +54,7 @@ CVector2 CFootBotForaging::selectFoodRandom() {
 
    // Claim this food item (selected) and return it's position
    m_sFoodData.localData[idx].Assigned = 1;
-   currSingleReward = m_sFoodData.localData[idx].Reward;
+   currFoodIdx = idx;
    return m_sFoodData.localData[idx].Position;
 }
 
@@ -98,7 +83,7 @@ CVector2 CFootBotForaging::selectFoodClosest() {
 
    // Claim this food item (selected) and return it's position
    m_sFoodData.localData[idx].Assigned = 1;
-   currSingleReward = m_sFoodData.localData[idx].Reward;
+   currFoodIdx = idx;
    return m_sFoodData.localData[idx].Position;
 }
 
@@ -134,7 +119,7 @@ CVector2 CFootBotForaging::selectFoodBestReward() {
 
    // Claim this food item (selected) and return it's position
    m_sFoodData.localData[idx].Assigned = 1;
-   currSingleReward = m_sFoodData.localData[idx].Reward;
+   currFoodIdx = idx;
    return position;
 }
 
@@ -142,15 +127,29 @@ CVector2 CFootBotForaging::selectFoodBestReward() {
  * Novel Algorithm
 */
 void CFootBotForaging::novelAlgorithm() {
+   // Parameters to TUNE
    float alpha = 0.5;
    float beta = 0.5;
 
-   float score = alpha * currSingleReward - beta * (timestep - lastInformationUpdate);
+   // Current reward and time since we last got information
+   float reward = m_sFoodData.localData[currFoodIdx].Reward;
+   float deltaInfo = timestep - lastInformationUpdate;
 
-   LOG << GetId() << "'s score " << score << " reward: " << currSingleReward << " last info: " << (timestep - lastInformationUpdate) << std::endl;
-   if(score < 0.0) {
+   // The score metric
+   float score = alpha *  - beta * ();
+
+   LOG << GetId() << "'s score " << score << " reward: " << reward << " last info: " << deltaInfo << std::endl;
+
+   // If our score is within some threshold, return to the nest
+   // if(score < 0.0) {
+   if(timestep == 50) {
+      // Return to nest logic
       m_pcLEDs->SetAllColors(CColor::BLUE);
       m_sStateData.State = SStateData::STATE_RETURN_TO_NEST;
+
+      // We no longer have this food
+      m_sFoodData.localData[currFoodIdx].Assigned = 0;
+      locationSelected = false;
    }
 }
 
