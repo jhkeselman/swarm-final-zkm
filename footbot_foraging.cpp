@@ -317,7 +317,7 @@ void CFootBotForaging::Init(TConfigurationNode& t_node) {
 /****************************************/
 /****************************************/
 
-void CFootBotForaging::ControlStep() {   
+void CFootBotForaging::ControlStep() {
    switch(m_sStateData.State) {
       case SStateData::STATE_RESTING: {
          Rest();
@@ -514,9 +514,9 @@ void CFootBotForaging::Rest() {
       * 'exploring' */
       if(m_sStateData.TimeRested > m_sStateData.MinimumRestingTime &&
          m_pcRNG->Uniform(m_sStateData.ProbRange) < m_sStateData.RestToExploreProb) {
-         m_pcLEDs->SetAllColors(CColor::GREEN);
-         m_sStateData.State = SStateData::STATE_EXPLORING;
-         m_sStateData.TimeRested = 0;
+         // m_pcLEDs->SetAllColors(CColor::GREEN);
+         // m_sStateData.State = SStateData::STATE_EXPLORING;
+         // m_sStateData.TimeRested = 0;
       }
       else {
          ++m_sStateData.TimeRested;
@@ -554,7 +554,7 @@ void CFootBotForaging::Rest() {
             m_sFoodData.localData = m_sFoodData.globalData;
             
             // For initialization, if the timestep is GEQ robot id, select an item (really only applies first few time steps)
-            LOG << "ID: " << GetId() << " timestep: " << timestep << " threshold " << std::stoi(GetId().substr(2)) + 1 << std::endl;
+            // LOG << "ID: " << GetId() << " timestep: " << timestep << " threshold " << std::stoi(GetId().substr(2)) + 1 << std::endl;
             if(timestep >= std::stoi(GetId().substr(2)) + 1) {
                // Save we last got food at this timestep
                lastInformationUpdate = timestep;
