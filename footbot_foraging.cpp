@@ -39,9 +39,14 @@ void CFootBotForaging::driveToGoal(CVector2 goal, CVector2 cDiffusion) {
 */
 CVector2 CFootBotForaging::selectFoodRandom() {
    // If there's no food to get, return a zero vector
-   if (m_sFoodData.localData.empty()) {
-      return CVector2(0.0f, 0.0f);
+   bool noFood = true;
+   for(SFoodItem item : m_sFoodData.localData) {
+      if(item.Position != CVector2(100.0f, 100.0f)) {
+         noFood = false;
+         break;
+      }
    }
+   if (noFood) {return CVector2(0.0f, 0.0f);}
 
    // Choose a random index based on the size of the local data structure
    UInt32 idx = m_pcRNG->Uniform(CRange<UInt32>(0.0, m_sFoodData.localData.size() - 1));
@@ -62,10 +67,16 @@ CVector2 CFootBotForaging::selectFoodRandom() {
  * Select the closest unassigned food item
 */
 CVector2 CFootBotForaging::selectFoodClosest() {
+   // LOG << m_sFoodData.globalData.size() << std::endl;
    // If there's no food to get, return a zero vector
-   if (m_sFoodData.localData.empty()) {
-      return CVector2(0.0f, 0.0f);
+   bool noFood = true;
+   for(SFoodItem item : m_sFoodData.localData) {
+      if(item.Position != CVector2(100.0f, 100.0f)) {
+         noFood = false;
+         break;
+      }
    }
+   if (noFood) {return CVector2(0.0f, 0.0f);}
 
    // Initialize this to zero
    UInt32 idx = 0;
@@ -92,9 +103,14 @@ CVector2 CFootBotForaging::selectFoodClosest() {
 */
 CVector2 CFootBotForaging::selectFoodBestReward() {
    // If there's no food to get, return a zero vector
-   if (m_sFoodData.localData.empty()) {
-      return CVector2(0.0f, 0.0f);
+   bool noFood = true;
+   for(SFoodItem item : m_sFoodData.localData) {
+      if(item.Position != CVector2(100.0f, 100.0f)) {
+         noFood = false;
+         break;
+      }
    }
+   if (noFood) {return CVector2(0.0f, 0.0f);}
 
    // Initialize variables
    UInt32 idx = 0;
@@ -138,19 +154,19 @@ void CFootBotForaging::novelAlgorithm() {
    // The score metric
    float score = alpha * reward - beta * deltaInfo;
 
-   LOG << GetId() << "'s score " << score << " reward: " << reward << " last info: " << deltaInfo << std::endl;
+   //LOG << GetId() << "'s score " << score << " reward: " << reward << " last info: " << deltaInfo << std::endl;
 
    // If our score is within some threshold, return to the nest
    // if(score < 0.0) {
-   if(timestep == 50) {
-      // Return to nest logic
-      m_pcLEDs->SetAllColors(CColor::BLUE);
-      m_sStateData.State = SStateData::STATE_RETURN_TO_NEST;
+   // if(timestep == 100) {
+   //    // Return to nest logic
+   //    m_pcLEDs->SetAllColors(CColor::BLUE);
+   //    m_sStateData.State = SStateData::STATE_RETURN_TO_NEST;
 
-      // We no longer have this food
-      m_sFoodData.localData[currFoodIdx].Assigned = 0;
-      locationSelected = false;
-   }
+   //    // We no longer have this food
+   //    m_sFoodData.localData[currFoodIdx].Assigned = 0;
+   //    locationSelected = false;
+   // }
 }
 
 
@@ -312,6 +328,9 @@ void CFootBotForaging::ControlStep() {
       }
       case SStateData::STATE_EXPLORING: {
          Explore();
+
+         // Call this while exploring to monitor when to return
+         novelAlgorithm();
          break;
       }
       case SStateData::STATE_RETURN_TO_NEST: {
@@ -322,7 +341,6 @@ void CFootBotForaging::ControlStep() {
          LOGERR << "We can't be here, there's a bug!" << std::endl;
       }
    }
-   novelAlgorithm();
 }
 
 /****************************************/

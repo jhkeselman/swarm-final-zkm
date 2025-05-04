@@ -26,8 +26,6 @@ public:
    /* NEW FUNCTIONS */
    // Populate global food information to local data structures
    void loadFood();
-   // Remove a food item from being tracked
-   void deleteFoodItem(int idx);
    // Create a food item
    SFoodItem generateFoodItem();
 

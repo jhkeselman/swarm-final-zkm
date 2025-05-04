@@ -95,26 +95,6 @@ void CForagingLoopFunctions::loadFood() {
    }
 }
 
-void CForagingLoopFunctions::deleteFoodItem(int idx) {
-   /* Check whether a robot is on a food item */
-   CSpace::TMapPerType& m_cFootbots = GetSpace().GetEntitiesByType("foot-bot");
-
-   // For each footbot
-   for(CSpace::TMapPerType::iterator it = m_cFootbots.begin();
-       it != m_cFootbots.end();
-       ++it) {
-      /* Get handle to foot-bot entity and controller */
-      CFootBotEntity& cFootBot = *any_cast<CFootBotEntity*>(it->second);
-      CFootBotForaging& cController = dynamic_cast<CFootBotForaging&>(cFootBot.GetControllableEntity().GetController());
-
-      /* Get food data */
-      CFootBotForaging::SFoodData& sFoodData = cController.GetFoodData();
-      
-      // Populate each food structure with locations of all foods
-      sFoodData.globalData.erase(sFoodData.globalData.begin() + idx);
-   }
-}
-
 /*
 *
 * OUR NEW FUNCTIONS END
@@ -266,9 +246,6 @@ void CForagingLoopFunctions::PreStep() {
                      m_cFoodItems[i].Position.Set(100.0f, 100.f);
                      // Update the total reward (OUR CHANGE)
                      totalReward += m_cFoodItems[i].Reward;
-                     LOG << "Total Reward: " << totalReward << std::endl;
-                     // TODO: See if this is still needed
-                     deleteFoodItem(i);
                      /* The foot-bot is now carrying an item */
                      sFoodData.HasFoodItem = true;
                      sFoodData.FoodItemIdx = i;
@@ -300,9 +277,9 @@ void CForagingLoopFunctions::PreStep() {
    int recurrance = 50;
    if(tStep % recurrance == 0) {
       // Make a new food item and update the floor to match
-      SFoodItem sItem = generateFoodItem();
-      m_cFoodItems.push_back(sItem);
-      m_pcFloor->SetChanged();
+      // SFoodItem sItem = generateFoodItem();
+      // m_cFoodItems.push_back(sItem);
+      // m_pcFloor->SetChanged();
    }
 
    // Update the food information globally/locally
