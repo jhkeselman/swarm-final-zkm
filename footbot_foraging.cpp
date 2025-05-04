@@ -142,8 +142,16 @@ CVector2 CFootBotForaging::selectFoodBestReward() {
  * Novel Algorithm
 */
 void CFootBotForaging::novelAlgorithm() {
-   LOG << currSingleReward << " is robot " << GetId() << " current reward." << std::endl;
-   //LOG << timestep - lastInformationUpdate << " steps since last information update." << std::endl;
+   float alpha = 0.5;
+   float beta = 0.5;
+
+   float score = alpha * currSingleReward - beta * (timestep - lastInformationUpdate);
+
+   LOG << GetId() << "'s score " << score << " reward: " << currSingleReward << " last info: " << (timestep - lastInformationUpdate) << std::endl;
+   if(score < 0.0) {
+      m_pcLEDs->SetAllColors(CColor::BLUE);
+      m_sStateData.State = SStateData::STATE_RETURN_TO_NEST;
+   }
 }
 
 
