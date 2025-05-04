@@ -126,7 +126,7 @@ void CForagingLoopFunctions::Init(TConfigurationNode& t_node) {
       /* Open the file, erasing its contents */
       m_cOutput.open(m_strOutput.c_str(), std::ios_base::trunc | std::ios_base::out);
       // m_cOutput << "# clock\twalking\tresting\tcollected_food\tenergy" << std::endl;
-      m_cOutput << "# clock\ttotalReward" << std::endl;
+      m_cOutput << "# clock\ttasks\ttaskCompletionRatio\ttotalReward" << std::endl;
       /* Get energy gain per item collected */
       GetNodeAttribute(tForaging, "energy_per_item", m_unEnergyPerFoodItem);
       /* Get energy loss per walking robot */
@@ -143,12 +143,13 @@ void CForagingLoopFunctions::Init(TConfigurationNode& t_node) {
 void CForagingLoopFunctions::Reset() {
    /* Zero the counters */
    m_unCollectedFood = 0;
+   totalCompletingTask = 0;
    m_nEnergy = 0;
    /* Close the file */
    m_cOutput.close();
    /* Open the file, erasing its contents */
    m_cOutput.open(m_strOutput.c_str(), std::ios_base::trunc | std::ios_base::out);
-   m_cOutput << "# clock\ttotalReward" << std::endl;
+   m_cOutput << "# clock\ttasks\ttaskCompletionRatio\ttotalReward" << std::endl;
    /* Distribute uniformly the items in the environment (OUR CHANGE) */
    m_cFoodItems.clear();
    for(UInt32 i = 0; i < unFoodItems; ++i) {
@@ -252,6 +253,7 @@ void CForagingLoopFunctions::PreStep() {
                      bDone = true;
                   }
                   m_cFoodItems[i].Progress--;
+                  totalCompletingTask++;
                }
             }
          }
@@ -265,7 +267,10 @@ void CForagingLoopFunctions::PreStep() {
    //           << unRestingFBs << "\t"
    //           << m_unCollectedFood << "\t"
    //           << m_nEnergy << std::endl;
+   float ratio = std::round(static_cast<float>(totalCompletingTask) / (GetSpace().GetSimulationClock() - totalCompletingTask) * 100) / 100;
    m_cOutput << GetSpace().GetSimulationClock() << "\t"
+             << m_unCollectedFood << "\t"
+             << ratio << "\t"
              << totalReward << std::endl;
    
    /*
@@ -285,7 +290,7 @@ void CForagingLoopFunctions::PreStep() {
    loadFood();
 
    // Output the total reward
-   // LOG << "Total Reward: " << totalReward << std::endl;
+   LOG << "Total Reward: " << totalReward << std::endl;
 }
 
 /****************************************/

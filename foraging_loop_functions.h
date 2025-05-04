@@ -49,7 +49,8 @@ private:
    // Global data structure of food item data
    std::vector<SFoodItem> m_cFoodItems;
    // Total reward across all foot-bots
-   int totalReward;
+   int totalReward = 0;
+   int totalCompletingTask = 0;
 };
 
 #endif

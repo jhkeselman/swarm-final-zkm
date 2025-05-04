@@ -25,6 +25,7 @@ void CFootBotForaging::driveToGoal(CVector2 goal, CVector2 cDiffusion) {
 
    CVector2 d(diff.GetX(), diff.GetY());
    d.Rotate(-heading);  // rotate to robot-local frame
+   
    SetWheelSpeedsFromVector(d * m_sWheelTurningParams.MaxSpeed);
 
    // If we're close enough on the food item, make the footbot orange (changing states soon)
@@ -153,7 +154,7 @@ void CFootBotForaging::novelAlgorithm() {
    // The score metric
    float score = alpha * reward - beta * deltaInfo;
 
-   LOG << GetId() << "'s score " << score << " reward: " << reward << " last info: " << deltaInfo << std::endl;
+   // LOG << GetId() << "'s score " << score << " reward: " << reward << " last info: " << deltaInfo << std::endl;
 
    // If our score is within some threshold, return to the nest
    // if(score < 0.0) {
