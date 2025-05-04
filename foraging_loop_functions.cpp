@@ -277,13 +277,16 @@ void CForagingLoopFunctions::PreStep() {
    int recurrance = 50;
    if(tStep % recurrance == 0) {
       // Make a new food item and update the floor to match
-      // SFoodItem sItem = generateFoodItem();
-      // m_cFoodItems.push_back(sItem);
-      // m_pcFloor->SetChanged();
+      SFoodItem sItem = generateFoodItem();
+      m_cFoodItems.push_back(sItem);
+      m_pcFloor->SetChanged();
    }
 
    // Update the food information globally/locally
    loadFood();
+
+   // Output the total reward
+   // LOG << "Total Reward: " << totalReward << std::endl;
 }
 
 /****************************************/

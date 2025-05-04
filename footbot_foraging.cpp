@@ -67,7 +67,6 @@ CVector2 CFootBotForaging::selectFoodRandom() {
  * Select the closest unassigned food item
 */
 CVector2 CFootBotForaging::selectFoodClosest() {
-   // LOG << m_sFoodData.globalData.size() << std::endl;
    // If there's no food to get, return a zero vector
    bool noFood = true;
    for(SFoodItem item : m_sFoodData.localData) {
@@ -154,7 +153,7 @@ void CFootBotForaging::novelAlgorithm() {
    // The score metric
    float score = alpha * reward - beta * deltaInfo;
 
-   //LOG << GetId() << "'s score " << score << " reward: " << reward << " last info: " << deltaInfo << std::endl;
+   LOG << GetId() << "'s score " << score << " reward: " << reward << " last info: " << deltaInfo << std::endl;
 
    // If our score is within some threshold, return to the nest
    // if(score < 0.0) {
@@ -556,7 +555,6 @@ void CFootBotForaging::Rest() {
             // For initialization, if the timestep is GEQ robot id, select an item (really only applies first few time steps)
             if(timestep >= std::stoi(GetId().substr(2)) + 1) {
                // Save we last got food at this timestep
-               LOG << "Assigned at timestep: " << timestep << std::endl;
                lastInformationUpdate = timestep;
 
                // Select a food according to these functions
