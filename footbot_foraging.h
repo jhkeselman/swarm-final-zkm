@@ -361,7 +361,6 @@ private:
 
    // Has a location been selected or is there still food?
    bool locationSelected = false;
-   bool stillFood = true;
 
    // When was the last time I got new information?
    int lastInformationUpdate;

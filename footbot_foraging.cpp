@@ -356,7 +356,6 @@ void CFootBotForaging::Reset() {
    m_pcRABA->SetData(0, LAST_EXPLORATION_NONE);
 
    locationSelected = false;
-   stillFood = true;
 }
 
 /****************************************/
@@ -509,77 +508,34 @@ void CFootBotForaging::SetWheelSpeedsFromVector(const CVector2& c_heading) {
 /****************************************/
 
 void CFootBotForaging::Rest() {
-   if(stillFood) {
-      /* If we have stayed here enough, probabilistically switch to
-      * 'exploring' */
-      if(m_sStateData.TimeRested > m_sStateData.MinimumRestingTime &&
-         m_pcRNG->Uniform(m_sStateData.ProbRange) < m_sStateData.RestToExploreProb) {
-         // m_pcLEDs->SetAllColors(CColor::GREEN);
-         // m_sStateData.State = SStateData::STATE_EXPLORING;
-         // m_sStateData.TimeRested = 0;
-      }
-      else {
-         ++m_sStateData.TimeRested;
-         /* Be sure not to send the last exploration result multiple times */
-         if(m_sStateData.TimeRested == 1) {
-            m_pcRABA->SetData(0, LAST_EXPLORATION_NONE);
-         }
-         /*
-         * Social rule: listen to what other people have found and modify
-         * probabilities accordingly
-         */
-         const CCI_RangeAndBearingSensor::TReadings& tPackets = m_pcRABS->GetReadings();
-         for(size_t i = 0; i < tPackets.size(); ++i) {
-            switch(tPackets[i].Data[0]) {
-               case LAST_EXPLORATION_SUCCESSFUL: {
-                  m_sStateData.RestToExploreProb += m_sStateData.SocialRuleRestToExploreDeltaProb;
-                  m_sStateData.ProbRange.TruncValue(m_sStateData.RestToExploreProb);
-                  m_sStateData.ExploreToRestProb -= m_sStateData.SocialRuleExploreToRestDeltaProb;
-                  m_sStateData.ProbRange.TruncValue(m_sStateData.ExploreToRestProb);
-                  break;
-               }
-               case LAST_EXPLORATION_UNSUCCESSFUL: {
-                  m_sStateData.ExploreToRestProb += m_sStateData.SocialRuleExploreToRestDeltaProb;
-                  m_sStateData.ProbRange.TruncValue(m_sStateData.ExploreToRestProb);
-                  m_sStateData.RestToExploreProb -= m_sStateData.SocialRuleRestToExploreDeltaProb;
-                  m_sStateData.ProbRange.TruncValue(m_sStateData.RestToExploreProb);
-                  break;
-               }
-            }
-         }
-         
-         // If a location has not been selected (OUR CODE)
-         if(!locationSelected) {
-            // Update the local information with new global knowledge (since we're in the nest)
-            m_sFoodData.localData = m_sFoodData.globalData;
-            
-            // For initialization, if the timestep is GEQ robot id, select an item (really only applies first few time steps)
-            // LOG << "ID: " << GetId() << " timestep: " << timestep << " threshold " << std::stoi(GetId().substr(2)) + 1 << std::endl;
-            if(timestep >= std::stoi(GetId().substr(2)) + 1) {
-               // Save we last got food at this timestep
-               lastInformationUpdate = timestep;
+   // If a location has not been selected (OUR CODE)
+   if(!locationSelected) {
+      // Update the local information with new global knowledge (since we're in the nest)
+      m_sFoodData.localData = m_sFoodData.globalData;
+      
+      // For initialization, if the timestep is GEQ robot id, select an item (really only applies first few time steps)
+      // LOG << "ID: " << GetId() << " timestep: " << timestep << " threshold " << std::stoi(GetId().substr(2)) + 1 << std::endl;
+      if(timestep >= std::stoi(GetId().substr(2)) + 1) {
+         // Save we last got food at this timestep
+         lastInformationUpdate = timestep;
 
-               // Select a food according to these functions
-               // goal = selectFoodRandom();
-               goal = selectFoodClosest();
-               // goal = selectFoodBestReward();
+         // Select a food according to these functions
+         // goal = selectFoodRandom();
+         goal = selectFoodClosest();
+         // goal = selectFoodBestReward();
 
-               // If a zero vector is returned, no food left!
-               if (goal.GetX() == 0.0f && goal.GetY() == 0.0f) {
-                  LOG << "No food for me!" << std::endl;
-                  m_pcWheels->SetLinearVelocity(0.0f, 0.0f);
-                  stillFood = false; // The food is all gone
-               }
-               else {
-                  LOG << "Goal: " << goal << std::endl;
-                  // We have a location, go towards the food (exploring state)
-                  locationSelected = true;
-                  m_pcLEDs->SetAllColors(CColor::GREEN);
-                  m_sStateData.State = SStateData::STATE_EXPLORING;
-                  m_sStateData.TimeRested = 0;
-                  stillFood = true; // There is still food out there
-               }
-            }
+         // If a zero vector is returned, no food left!
+         if (goal.GetX() == 0.0f && goal.GetY() == 0.0f) {
+            LOG << "No food for me!" << std::endl;
+            m_pcWheels->SetLinearVelocity(0.0f, 0.0f);
+         }
+         else {
+            LOG << "Goal: " << goal << std::endl;
+            // We have a location, go towards the food (exploring state)
+            locationSelected = true;
+            m_pcLEDs->SetAllColors(CColor::GREEN);
+            m_sStateData.State = SStateData::STATE_EXPLORING;
+            m_sStateData.TimeRested = 0;
          }
       }
    }

@@ -290,7 +290,7 @@ void CForagingLoopFunctions::PreStep() {
    loadFood();
 
    // Output the total reward
-   LOG << "Total Reward: " << totalReward << std::endl;
+   // LOG << "Total Reward: " << totalReward << std::endl;
 }
 
 /****************************************/
