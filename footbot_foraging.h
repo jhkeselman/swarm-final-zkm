@@ -307,6 +307,9 @@ private:
    // Select the highest rewarding unassigned food item
    CVector2 selectFoodBestReward();
 
+   // Use our novel algorithm to determine when to come back for new info
+   void novelAlgorithm();
+
 private:
 
    /* Pointer to the differential steering actuator */
@@ -357,6 +360,10 @@ private:
    // Has a location been selected or is there still food?
    bool locationSelected = false;
    bool stillFood = true;
+
+   // When was the last time I got new information?
+   int lastInformationUpdate;
+   int currSingleReward;
 };
 
 #endif

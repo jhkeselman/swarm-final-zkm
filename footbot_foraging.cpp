@@ -43,7 +43,7 @@ void CFootBotForaging::driveToGoal(CVector2 goal, CVector2 cDiffusion) {
 
 
    // If we're close enough on the food item, make the footbot orange (changing states soon)
-   float distance_thresh = 0.02;
+   float distance_thresh = 0.1;
    if(diff.Length() < distance_thresh) {
       m_pcLEDs->SetAllColors(CColor::ORANGE);
    }
@@ -69,6 +69,7 @@ CVector2 CFootBotForaging::selectFoodRandom() {
 
    // Claim this food item (selected) and return it's position
    m_sFoodData.localData[idx].Assigned = 1;
+   currSingleReward = m_sFoodData.localData[idx].Reward;
    return m_sFoodData.localData[idx].Position;
 }
 
@@ -97,6 +98,7 @@ CVector2 CFootBotForaging::selectFoodClosest() {
 
    // Claim this food item (selected) and return it's position
    m_sFoodData.localData[idx].Assigned = 1;
+   currSingleReward = m_sFoodData.localData[idx].Reward;
    return m_sFoodData.localData[idx].Position;
 }
 
@@ -132,8 +134,19 @@ CVector2 CFootBotForaging::selectFoodBestReward() {
 
    // Claim this food item (selected) and return it's position
    m_sFoodData.localData[idx].Assigned = 1;
+   currSingleReward = m_sFoodData.localData[idx].Reward;
    return position;
 }
+
+/*
+ * Novel Algorithm
+*/
+void CFootBotForaging::novelAlgorithm() {
+   LOG << currSingleReward << " is robot " << GetId() << " current reward." << std::endl;
+   //LOG << timestep - lastInformationUpdate << " steps since last information update." << std::endl;
+}
+
+
 
 /****************************************/
 /****************************************/
@@ -302,6 +315,7 @@ void CFootBotForaging::ControlStep() {
          LOGERR << "We can't be here, there's a bug!" << std::endl;
       }
    }
+   novelAlgorithm();
 }
 
 /****************************************/
@@ -516,7 +530,10 @@ void CFootBotForaging::Rest() {
             
             // For initialization, if the timestep is GEQ robot id, select an item (really only applies first few time steps)
             if(timestep >= std::stoi(GetId().substr(2)) + 1) {
+               // Save we last got food at this timestep
                LOG << "Assigned at timestep: " << timestep << std::endl;
+               lastInformationUpdate = timestep;
+
                // Select a food according to these functions
                // goal = selectFoodRandom();
                goal = selectFoodClosest();
