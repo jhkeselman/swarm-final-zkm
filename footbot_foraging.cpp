@@ -183,6 +183,7 @@ void CFootBotForaging::SFoodData::Reset() {
    FoodItemIdx = 0;
    TotalFoodItems = 0;
    globalData.clear();
+   localData.clear();
 }
 
 /****************************************/
@@ -356,6 +357,9 @@ void CFootBotForaging::Reset() {
    m_eLastExplorationResult = LAST_EXPLORATION_NONE;
    m_pcRABA->ClearData();
    m_pcRABA->SetData(0, LAST_EXPLORATION_NONE);
+
+   locationSelected = false;
+   stillFood = true;
 }
 
 /****************************************/

@@ -110,7 +110,6 @@ void CForagingLoopFunctions::Init(TConfigurationNode& t_node) {
       /* Get a pointer to the floor entity */
       m_pcFloor = &GetSpace().GetFloorEntity();
       /* Get the number of food items we want to be scattered from XML */
-      UInt32 unFoodItems;
       GetNodeAttribute(tForaging, "items", unFoodItems);
       /* Get the number of food items we want to be scattered from XML */
       GetNodeAttribute(tForaging, "radius", m_fFoodSquareRadius);
@@ -126,7 +125,8 @@ void CForagingLoopFunctions::Init(TConfigurationNode& t_node) {
       GetNodeAttribute(tForaging, "output", m_strOutput);
       /* Open the file, erasing its contents */
       m_cOutput.open(m_strOutput.c_str(), std::ios_base::trunc | std::ios_base::out);
-      m_cOutput << "# clock\twalking\tresting\tcollected_food\tenergy" << std::endl;
+      // m_cOutput << "# clock\twalking\tresting\tcollected_food\tenergy" << std::endl;
+      m_cOutput << "# clock\ttotalReward" << std::endl;
       /* Get energy gain per item collected */
       GetNodeAttribute(tForaging, "energy_per_item", m_unEnergyPerFoodItem);
       /* Get energy loss per walking robot */
@@ -148,17 +148,12 @@ void CForagingLoopFunctions::Reset() {
    m_cOutput.close();
    /* Open the file, erasing its contents */
    m_cOutput.open(m_strOutput.c_str(), std::ios_base::trunc | std::ios_base::out);
-   m_cOutput << "# clock\twalking\tresting\tcollected_food\tenergy" << std::endl;
+   m_cOutput << "# clock\ttotalReward" << std::endl;
    /* Distribute uniformly the items in the environment (OUR CHANGE) */
-   for(UInt32 i = 0; i < m_cFoodItems.size(); ++i) {
-      CVector2 samplePos;
-      do {
-         samplePos = CVector2(m_pcRNG->Uniform(m_cForagingArenaSideX),
-                  m_pcRNG->Uniform(m_cForagingArenaSideY));
-      } while(inRadius(samplePos, 0.25));
-      
-      m_cFoodItems[i].Position.Set(samplePos.GetX(),
-                        samplePos.GetY());
+   m_cFoodItems.clear();
+   for(UInt32 i = 0; i < unFoodItems; ++i) {
+      SFoodItem sItem = generateFoodItem();
+      m_cFoodItems.push_back(sItem);
    }
 
    loadFood();
@@ -263,11 +258,13 @@ void CForagingLoopFunctions::PreStep() {
    /* Update energy expediture due to walking robots */
    m_nEnergy -= unWalkingFBs * m_unEnergyPerWalkingRobot;
    /* Output stuff to file */
+   // m_cOutput << GetSpace().GetSimulationClock() << "\t"
+   //           << unWalkingFBs << "\t"
+   //           << unRestingFBs << "\t"
+   //           << m_unCollectedFood << "\t"
+   //           << m_nEnergy << std::endl;
    m_cOutput << GetSpace().GetSimulationClock() << "\t"
-             << unWalkingFBs << "\t"
-             << unRestingFBs << "\t"
-             << m_unCollectedFood << "\t"
-             << m_nEnergy << std::endl;
+             << totalReward << std::endl;
    
    /*
    * CHECK IF NEW FOOD NEEDS TO BE POPULATED
