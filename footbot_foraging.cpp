@@ -8,6 +8,18 @@
 #include <argos3/core/utility/logging/argos_log.h>
 #include <limits>
 
+
+float wrap_to_pi(float angle) {
+   while(angle > M_PI) {
+     angle = angle - 2 * M_PI;
+   }
+   while(angle < -M_PI) {
+     angle = angle + 2 * M_PI;
+   }
+   return angle;
+ }
+
+ 
 /*
  * Command the footbot to drive to a goal
 */
@@ -23,10 +35,22 @@ void CFootBotForaging::driveToGoal(CVector2 goal, CVector2 cDiffusion) {
    // Difference vector between goal and position
    CVector2 diff = (goal - pos);
 
-   CVector2 d(diff.GetX(), diff.GetY());
-   d.Rotate(-heading);  // rotate to robot-local frame
+   float rho = std::sqrt(diff.GetX()*diff.GetX() + diff.GetY()*diff.GetY());
+   float theta_target = std::atan2(diff.GetY(), diff.GetX());
+   float heading_error = wrap_to_pi(theta_target - heading.GetValue());
+
+   float v = k_rho * rho;
+   float omega = k_alpha * heading_error;
    
-   SetWheelSpeedsFromVector(d * m_sWheelTurningParams.MaxSpeed);
+   float vl = (2 * v - omega * L) / (2 * r);
+   float vr = (2 * v + omega * L) / (2 * r);
+
+   m_pcWheels->SetLinearVelocity(vl, vr);
+   
+   // CVector2 d(diff.GetX(), diff.GetY());
+   // d.Rotate(-heading);  // rotate to robot-local frame
+   
+   // SetWheelSpeedsFromVector(d * m_sWheelTurningParams.MaxSpeed);
 
    // If we're close enough on the food item, make the footbot orange (changing states soon)
    float distance_thresh = 0.1;

@@ -364,6 +364,13 @@ private:
    // When was the last time I got new information?
    int lastInformationUpdate;
    int currFoodIdx;
+
+   // Movement parameters
+   float r = 0.0205;
+   float L = 0.053;
+
+   float k_rho = 1.0;
+   float k_alpha = 5.0;
 };
 
 #endif
