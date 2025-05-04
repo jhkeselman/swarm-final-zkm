@@ -136,7 +136,7 @@ void CFootBotForaging::novelAlgorithm() {
    float deltaInfo = timestep - lastInformationUpdate;
 
    // The score metric
-   float score = alpha *  - beta * ();
+   float score = alpha * reward - beta * deltaInfo;
 
    LOG << GetId() << "'s score " << score << " reward: " << reward << " last info: " << deltaInfo << std::endl;
 
