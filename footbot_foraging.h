@@ -295,6 +295,8 @@ private:
     * OUR FUNCTIONS
    */
 
+   bool noAvailableFood();
+
    // Input a goal and diffusion vector to drive to a point
    void driveToGoal(CVector2 goal, CVector2 cDiffusion); 
 
@@ -369,8 +371,13 @@ private:
    float r = 0.0205;
    float L = 0.053;
 
-   float k_rho = 1.0;
-   float k_alpha = 5.0;
+   float last_rho = 0.0;
+   float last_alpha = 0.0;
+
+   float kp_lin = 1.5;
+   float kd_lin = 0.75;
+   float kp_ang = 7.5;
+   float kd_ang = 1.0;
 };
 
 #endif

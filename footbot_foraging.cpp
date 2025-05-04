@@ -7,18 +7,6 @@
 /* Logging */
 #include <argos3/core/utility/logging/argos_log.h>
 #include <limits>
-
-
-float wrap_to_pi(float angle) {
-   while(angle > M_PI) {
-     angle = angle - 2 * M_PI;
-   }
-   while(angle < -M_PI) {
-     angle = angle + 2 * M_PI;
-   }
-   return angle;
- }
-
  
 /*
  * Command the footbot to drive to a goal
@@ -36,42 +24,32 @@ void CFootBotForaging::driveToGoal(CVector2 goal, CVector2 cDiffusion) {
    CVector2 diff = (goal - pos);
 
    float rho = std::sqrt(diff.GetX()*diff.GetX() + diff.GetY()*diff.GetY());
-   float theta_target = std::atan2(diff.GetY(), diff.GetX());
-   float heading_error = wrap_to_pi(theta_target - heading.GetValue());
+   CRadians theta_target = ATan2(diff.GetY(), diff.GetX());
+   CRadians alpha = (theta_target - heading).SignedNormalize();
 
-   float v = k_rho * rho;
-   float omega = k_alpha * heading_error;
+   float v = kp_lin * rho + kd_lin * (rho - last_rho) / timestep;
+   float omega = kp_ang * alpha.GetValue() + kd_ang * (alpha.GetValue() - last_alpha) / timestep;
    
    float vl = (2 * v - omega * L) / (2 * r);
    float vr = (2 * v + omega * L) / (2 * r);
 
    m_pcWheels->SetLinearVelocity(vl, vr);
-   
-   // CVector2 d(diff.GetX(), diff.GetY());
-   // d.Rotate(-heading);  // rotate to robot-local frame
-   
-   // SetWheelSpeedsFromVector(d * m_sWheelTurningParams.MaxSpeed);
 
    // If we're close enough on the food item, make the footbot orange (changing states soon)
    float distance_thresh = 0.1;
    if(diff.Length() < distance_thresh) {
       m_pcLEDs->SetAllColors(CColor::ORANGE);
    }
+
+   last_rho = rho;
+   last_alpha = alpha.GetValue();
 }
 
 /*
  * Select a food item according to a uniform random distribution
 */
 CVector2 CFootBotForaging::selectFoodRandom() {
-   // If there's no food to get, return a zero vector
-   bool noFood = true;
-   for(SFoodItem item : m_sFoodData.localData) {
-      if(item.Position != CVector2(100.0f, 100.0f)) {
-         noFood = false;
-         break;
-      }
-   }
-   if (noFood) {return CVector2(0.0f, 0.0f);}
+   if (noAvailableFood()) {return CVector2(0.0f, 0.0f);}
 
    // Choose a random index based on the size of the local data structure
    UInt32 idx = m_pcRNG->Uniform(CRange<UInt32>(0.0, m_sFoodData.localData.size() - 1));
@@ -92,15 +70,7 @@ CVector2 CFootBotForaging::selectFoodRandom() {
  * Select the closest unassigned food item
 */
 CVector2 CFootBotForaging::selectFoodClosest() {
-   // If there's no food to get, return a zero vector
-   bool noFood = true;
-   for(SFoodItem item : m_sFoodData.localData) {
-      if(item.Position != CVector2(100.0f, 100.0f)) {
-         noFood = false;
-         break;
-      }
-   }
-   if (noFood) {return CVector2(0.0f, 0.0f);}
+   if (noAvailableFood()) {return CVector2(0.0f, 0.0f);}
 
    // Initialize this to zero
    UInt32 idx = 0;
@@ -126,15 +96,7 @@ CVector2 CFootBotForaging::selectFoodClosest() {
  * Select the highest rewarding unassigned food item
 */
 CVector2 CFootBotForaging::selectFoodBestReward() {
-   // If there's no food to get, return a zero vector
-   bool noFood = true;
-   for(SFoodItem item : m_sFoodData.localData) {
-      if(item.Position != CVector2(100.0f, 100.0f)) {
-         noFood = false;
-         break;
-      }
-   }
-   if (noFood) {return CVector2(0.0f, 0.0f);}
+   if (noAvailableFood()) {return CVector2(0.0f, 0.0f);}
 
    // Initialize variables
    UInt32 idx = 0;
@@ -161,6 +123,16 @@ CVector2 CFootBotForaging::selectFoodBestReward() {
    m_sFoodData.localData[idx].Assigned = 1;
    currFoodIdx = idx;
    return position;
+}
+
+bool CFootBotForaging::noAvailableFood() {
+   for(SFoodItem item : m_sFoodData.localData) {
+      // LOG << "Footbot " << GetId() << " saw food item " << item.Position << std::endl;
+      if(item.Position != CVector2(100.0f, 100.0f) && item.Assigned == 0) {
+         return false;
+      }
+   }
+   return true;
 }
 
 /*
@@ -582,6 +554,7 @@ void CFootBotForaging::Rest() {
             m_sFoodData.localData = m_sFoodData.globalData;
             
             // For initialization, if the timestep is GEQ robot id, select an item (really only applies first few time steps)
+            LOG << "ID: " << GetId() << " timestep: " << timestep << " threshold " << std::stoi(GetId().substr(2)) + 1 << std::endl;
             if(timestep >= std::stoi(GetId().substr(2)) + 1) {
                // Save we last got food at this timestep
                lastInformationUpdate = timestep;
