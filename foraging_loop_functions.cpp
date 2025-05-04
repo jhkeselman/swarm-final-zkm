@@ -156,6 +156,8 @@ void CForagingLoopFunctions::Reset() {
       m_cFoodItems.push_back(sItem);
    }
 
+   totalReward = 0;
+
    loadFood();
 }
 
