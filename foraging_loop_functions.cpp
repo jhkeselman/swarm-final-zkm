@@ -2,7 +2,7 @@
 #include <argos3/core/simulator/simulator.h>
 #include <argos3/core/utility/configuration/argos_configuration.h>
 #include <argos3/plugins/robots/foot-bot/simulator/footbot_entity.h>
-#include <controllers/footbot_foraging/footbot_foraging.h>
+#include <footbot_foraging.h>
 /* Logging */
 #include <argos3/core/utility/logging/argos_log.h>
 
@@ -19,14 +19,92 @@ CForagingLoopFunctions::CForagingLoopFunctions() :
    m_unEnergyPerFoodItem(1),
    m_unEnergyPerWalkingRobot(1) {
 }
+/*
+*
+* OUR NEW FUNCTIONS START
+*
+*/
 
+/*
+ * Determine if an (x, y) position is within a radius of 0.5 plus some buffer
+*/
 bool inRadius(const CVector2& c_position_on_plane, float buffer = 0) {
    float radius = 0.5 + buffer;
    float x = c_position_on_plane.GetX();
    float y = c_position_on_plane.GetY(); 
 
+   // Formula to check if inside the radius
    return x*x + y*y < radius*radius;
 }
+
+/*
+ * Randomly samples a position to create a food item with progress 100 time steps
+ * and some random reward between 0 and 100. Item is initially unassigned
+*/
+SFoodItem CForagingLoopFunctions::generateFoodItem() {
+   CVector2 samplePos;
+   do {
+      samplePos = CVector2(m_pcRNG->Uniform(m_cForagingArenaSideX),
+               m_pcRNG->Uniform(m_cForagingArenaSideY));
+   } while(inRadius(samplePos, 0.25));
+   
+   SFoodItem sItem;
+   sItem.Position = samplePos;
+   sItem.Progress = 100; // 100 time steps
+   sItem.Reward = m_pcRNG->Uniform(CRange<UInt32>(0, 100));
+   sItem.Assigned = 0;
+
+   return sItem;
+}
+
+/*
+ * Updates global information with what items have been assigned, populating this and new food items to all local
+ * structures for each footbot.
+*/
+void CForagingLoopFunctions::loadFood() {
+   /* Check whether a robot is on a food item */
+   CSpace::TMapPerType& m_cFootbots = GetSpace().GetEntitiesByType("foot-bot");
+
+   // For each footbot
+   for(CSpace::TMapPerType::iterator it = m_cFootbots.begin();
+       it != m_cFootbots.end();
+       ++it) {
+      /* Get handle to foot-bot entity and controller */
+      CFootBotEntity& cFootBot = *any_cast<CFootBotEntity*>(it->second);
+      CFootBotForaging& cController = dynamic_cast<CFootBotForaging&>(cFootBot.GetControllableEntity().GetController());
+
+      /* Get food data */
+      CFootBotForaging::SFoodData& sFoodData = cController.GetFoodData();
+      
+      // Update global information with local data assignment
+      for(SFoodItem& globalItem : m_cFoodItems) {
+         for(SFoodItem& localItem : sFoodData.localData) {
+            // Is the information the same?
+             if(localItem.Position == globalItem.Position) {
+               // My task didn't finish, going to reset this as free
+               if(localItem.Assigned == 2) {
+                  globalItem.Assigned = 0;
+               } else {
+                  // Synchronize using an "OR"
+                 globalItem.Assigned = localItem.Assigned || globalItem.Assigned;
+               }
+             }
+         }
+     }
+
+      // Copy global data onto this robots data structure
+      sFoodData.globalData = m_cFoodItems;
+
+      // Update the timestep so the robot knows what time it's on
+      cController.timestep = argos::CSimulator::GetInstance().GetSpace().GetSimulationClock();
+   }
+}
+
+/*
+*
+* OUR NEW FUNCTIONS END
+*
+*/
 
 /****************************************/
 /****************************************/
@@ -37,35 +115,27 @@ void CForagingLoopFunctions::Init(TConfigurationNode& t_node) {
       /* Get a pointer to the floor entity */
       m_pcFloor = &GetSpace().GetFloorEntity();
       /* Get the number of food items we want to be scattered from XML */
-      UInt32 unFoodItems;
       GetNodeAttribute(tForaging, "items", unFoodItems);
       /* Get the number of food items we want to be scattered from XML */
       GetNodeAttribute(tForaging, "radius", m_fFoodSquareRadius);
       m_fFoodSquareRadius *= m_fFoodSquareRadius;
       /* Create a new RNG */
       m_pcRNG = CRandom::CreateRNG("argos");
-      /* Distribute uniformly the items in the environment */
+      /* Distribute uniformly the items in the environment (OUR CHANGE) */
       for(UInt32 i = 0; i < unFoodItems; ++i) {
-         CVector2 samplePos;
-         do {
-            samplePos = CVector2(m_pcRNG->Uniform(m_cForagingArenaSideX),
-                     m_pcRNG->Uniform(m_cForagingArenaSideY));
-         } while(inRadius(samplePos, 0.25));
-         
-         m_cFoodPos.push_back(samplePos);
+         SFoodItem sItem = generateFoodItem();
+         m_cFoodItems.push_back(sItem);
       }
       /* Get the output file name from XML */
       GetNodeAttribute(tForaging, "output", m_strOutput);
       /* Open the file, erasing its contents */
       m_cOutput.open(m_strOutput.c_str(), std::ios_base::trunc | std::ios_base::out);
-      m_cOutput << "# clock\twalking\tresting\tcollected_food\tenergy" << std::endl;
+      // m_cOutput << "# clock\twalking\tresting\tcollected_food\tenergy" << std::endl;
+      m_cOutput << "# clock\ttasks\ttaskCompletionRatio\ttotalReward" << std::endl;
       /* Get energy gain per item collected */
       GetNodeAttribute(tForaging, "energy_per_item", m_unEnergyPerFoodItem);
       /* Get energy loss per walking robot */
       GetNodeAttribute(tForaging, "energy_per_walking_robot", m_unEnergyPerWalkingRobot);
-
-      // Assign food positions for each robot
-      loadFood();
    }
    catch(CARGoSException& ex) {
       THROW_ARGOSEXCEPTION_NESTED("Error parsing loop functions!", ex);
@@ -78,23 +148,21 @@ void CForagingLoopFunctions::Init(TConfigurationNode& t_node) {
 void CForagingLoopFunctions::Reset() {
    /* Zero the counters */
    m_unCollectedFood = 0;
+   totalCompletingTask = 0;
    m_nEnergy = 0;
    /* Close the file */
    m_cOutput.close();
    /* Open the file, erasing its contents */
    m_cOutput.open(m_strOutput.c_str(), std::ios_base::trunc | std::ios_base::out);
-   m_cOutput << "# clock\twalking\tresting\tcollected_food\tenergy" << std::endl;
-   /* Distribute uniformly the items in the environment */
-   for(UInt32 i = 0; i < m_cFoodPos.size(); ++i) {
-      CVector2 samplePos;
-      do {
-         samplePos = CVector2(m_pcRNG->Uniform(m_cForagingArenaSideX),
-                  m_pcRNG->Uniform(m_cForagingArenaSideY));
-      } while(inRadius(samplePos, 0.25));
-      
-      m_cFoodPos[i].Set(samplePos.GetX(),
-                        samplePos.GetY());
+   m_cOutput << "# clock\ttasks\ttaskCompletionRatio\ttotalReward" << std::endl;
+   /* Distribute uniformly the items in the environment (OUR CHANGE) */
+   m_cFoodItems.clear();
+   for(UInt32 i = 0; i < unFoodItems; ++i) {
+      SFoodItem sItem = generateFoodItem();
+      m_cFoodItems.push_back(sItem);
    }
+
+   totalReward = 0;
 
    loadFood();
 }
@@ -111,11 +179,12 @@ void CForagingLoopFunctions::Destroy() {
 /****************************************/
 
 CColor CForagingLoopFunctions::GetFloorColor(const CVector2& c_position_on_plane) {
+   // Create the nest (OUR CHANGE)
    if(inRadius(c_position_on_plane)) { // -1.0f
       return CColor::GRAY50;
    }
-   for(UInt32 i = 0; i < m_cFoodPos.size(); ++i) {
-      if((c_position_on_plane - m_cFoodPos[i]).SquareLength() < m_fFoodSquareRadius) {
+   for(UInt32 i = 0; i <  m_cFoodItems.size(); ++i) {
+      if((c_position_on_plane - m_cFoodItems[i].Position).SquareLength() < m_fFoodSquareRadius) {
          return CColor::BLACK;
       }
    }
@@ -156,14 +225,6 @@ void CForagingLoopFunctions::PreStep() {
       if(sFoodData.HasFoodItem) {
          /* Check whether the foot-bot is in the nest */
          if(inRadius(cPos)) {
-            /* Place a new food item on the ground */
-            // CVector2 samplePos;
-            // do {
-            //    samplePos = CVector2(m_pcRNG->Uniform(m_cForagingArenaSideX),
-            //             m_pcRNG->Uniform(m_cForagingArenaSideY));
-            // } while(inRadius(samplePos, 0.25));
-            // m_cFoodPos[sFoodData.FoodItemIdx].Set(samplePos.GetX(),
-            //                                       samplePos.GetY());
             /* Drop the food item */
             sFoodData.HasFoodItem = false;
             sFoodData.FoodItemIdx = 0;
@@ -181,18 +242,23 @@ void CForagingLoopFunctions::PreStep() {
          if(!inRadius(cPos)) {
             /* Check whether the foot-bot is on a food item */
             bool bDone = false;
-            for(size_t i = 0; i < m_cFoodPos.size() && !bDone; ++i) {
-               if((cPos - m_cFoodPos[i]).SquareLength() < m_fFoodSquareRadius) {
-                  /* If so, we move that item out of sight */
-                  m_cFoodPos[i].Set(100.0f, 100.f);
-                  deleteFoodItem(i);
-                  /* The foot-bot is now carrying an item */
-                  sFoodData.HasFoodItem = true;
-                  sFoodData.FoodItemIdx = i;
-                  /* The floor texture must be updated */
-                  m_pcFloor->SetChanged();
-                  /* We are done */
-                  bDone = true;
+            for(size_t i = 0; i < m_cFoodItems.size() && !bDone; ++i) {
+               if((cPos - m_cFoodItems[i].Position).SquareLength() < m_fFoodSquareRadius && cController.currFoodIdx != -1) {
+                  if(m_cFoodItems[i].Progress == 0) {
+                     /* If so, we move that item out of sight */
+                     m_cFoodItems[i].Position.Set(100.0f, 100.f);
+                     // Update the total reward (OUR CHANGE)
+                     totalReward += m_cFoodItems[i].Reward;
+                     /* The foot-bot is now carrying an item */
+                     sFoodData.HasFoodItem = true;
+                     sFoodData.FoodItemIdx = i;
+                     /* The floor texture must be updated */
+                     m_pcFloor->SetChanged();
+                     /* We are done */
+                     bDone = true;
+                  }
+                  m_cFoodItems[i].Progress--;
+                  totalCompletingTask++;
                }
             }
          }
@@ -201,51 +267,41 @@ void CForagingLoopFunctions::PreStep() {
    /* Update energy expediture due to walking robots */
    m_nEnergy -= unWalkingFBs * m_unEnergyPerWalkingRobot;
    /* Output stuff to file */
+   // m_cOutput << GetSpace().GetSimulationClock() << "\t"
+   //           << unWalkingFBs << "\t"
+   //           << unRestingFBs << "\t"
+   //           << m_unCollectedFood << "\t"
+   //           << m_nEnergy << std::endl;
+   float ratio = std::round(static_cast<float>(totalCompletingTask) / (GetSpace().GetSimulationClock() * m_cFootbots.size()) * 100) / 100;
    m_cOutput << GetSpace().GetSimulationClock() << "\t"
-             << unWalkingFBs << "\t"
-             << unRestingFBs << "\t"
              << m_unCollectedFood << "\t"
-             << m_nEnergy << std::endl;
-}
-
-void CForagingLoopFunctions::loadFood() {
-   /* Check whether a robot is on a food item */
-   CSpace::TMapPerType& m_cFootbots = GetSpace().GetEntitiesByType("foot-bot");
-
-   // For each footbot
-   for(CSpace::TMapPerType::iterator it = m_cFootbots.begin();
-       it != m_cFootbots.end();
-       ++it) {
-      /* Get handle to foot-bot entity and controller */
-      CFootBotEntity& cFootBot = *any_cast<CFootBotEntity*>(it->second);
-      CFootBotForaging& cController = dynamic_cast<CFootBotForaging&>(cFootBot.GetControllableEntity().GetController());
-
-      /* Get food data */
-      CFootBotForaging::SFoodData& sFoodData = cController.GetFoodData();
-      
-      // Populate each food structure with locations of all foods
-      sFoodData.m_cFoodPos = m_cFoodPos;
+             << ratio << "\t"
+             << totalReward << std::endl;
+   
+   /*
+   * CHECK IF NEW FOOD NEEDS TO BE POPULATED
+   */
+   int totalItems = 0;
+   for(SFoodItem item : m_cFoodItems) {
+      if (item.Position != CVector2(100.0f,100.f)) {
+         totalItems++;
+      }
    }
-}
-
-void CForagingLoopFunctions::deleteFoodItem(int idx) {
-   /* Check whether a robot is on a food item */
-   CSpace::TMapPerType& m_cFootbots = GetSpace().GetEntitiesByType("foot-bot");
-
-   // For each footbot
-   for(CSpace::TMapPerType::iterator it = m_cFootbots.begin();
-       it != m_cFootbots.end();
-       ++it) {
-      /* Get handle to foot-bot entity and controller */
-      CFootBotEntity& cFootBot = *any_cast<CFootBotEntity*>(it->second);
-      CFootBotForaging& cController = dynamic_cast<CFootBotForaging&>(cFootBot.GetControllableEntity().GetController());
-
-      /* Get food data */
-      CFootBotForaging::SFoodData& sFoodData = cController.GetFoodData();
-      
-      // Populate each food structure with locations of all foods
-      sFoodData.m_cFoodPos.erase(sFoodData.m_cFoodPos.begin() + idx);
+   int tStep = argos::CSimulator::GetInstance().GetSpace().GetSimulationClock();
+   // Every few time steps update (50)
+   int recurrance = 200 / m_cFootbots.size();
+   if(tStep % recurrance == 0 && totalItems < m_cFootbots.size() + 10) {
+      // Make a new food item and update the floor to match
+      SFoodItem sItem = generateFoodItem();
+      m_cFoodItems.push_back(sItem);
+      m_pcFloor->SetChanged();
    }
+
+   // Update the food information globally/locally
+   loadFood();
+
+   // Output the total reward
+   LOG << "Total Reward: " << totalReward << std::endl;
 }
 
 /****************************************/

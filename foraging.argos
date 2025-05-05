@@ -24,7 +24,7 @@
   <controllers>
 
     <footbot_foraging_controller id="ffc"
-                                 library="build/controllers/footbot_foraging/libfootbot_foraging">
+                                 library="build/libfootbot_foraging">
       <actuators>
         <differential_steering implementation="default" />
         <leds implementation="default" medium="leds" />
@@ -43,7 +43,7 @@
         <wheel_turning hard_turn_angle_threshold="90"
                        soft_turn_angle_threshold="70"
                        no_turn_angle_threshold="10"
-                       max_speed="10" />
+                       max_speed="20" />
         <state initial_rest_to_explore_prob="0.1"
                initial_explore_to_rest_prob="0.1"
                food_rule_explore_to_rest_delta_prob="0.01"
@@ -64,9 +64,9 @@
   <!-- ****************** -->
   <!-- * Loop functions * -->
   <!-- ****************** -->
-  <loop_functions library="build/loop_functions/foraging_loop_functions/libforaging_loop_functions"
+  <loop_functions library="build/libforaging_loop_functions"
                   label="foraging_loop_functions">
-    <foraging items="10"
+    <foraging items="5"
               radius="0.1"
               energy_per_item="1000"
               energy_per_walking_robot="1"
@@ -129,7 +129,7 @@
     <distribute>
       <position method="uniform" min="-0.35,-0.35,0" max="0.35,0.35,0" />
       <orientation method="uniform" min="0,0,0" max="360,0,0" />
-      <entity quantity="1" max_trials="100">
+      <entity quantity="5" max_trials="100">
         <foot-bot id="fb">
           <controller config="ffc" />
         </foot-bot>

@@ -6,6 +6,8 @@
 #include <argos3/core/utility/math/range.h>
 #include <argos3/core/utility/math/rng.h>
 
+#include "SFoodItem.h"
+
 using namespace argos;
 
 class CForagingLoopFunctions : public CLoopFunctions {
@@ -20,14 +22,17 @@ public:
    virtual void Destroy();
    virtual CColor GetFloorColor(const CVector2& c_position_on_plane);
    virtual void PreStep();
+
+   /* NEW FUNCTIONS */
+   // Populate global food information to local data structures
    void loadFood();
-   void deleteFoodItem(int idx);
+   // Create a food item
+   SFoodItem generateFoodItem();
 
 private:
 
    Real m_fFoodSquareRadius;
    CRange<Real> m_cForagingArenaSideX, m_cForagingArenaSideY;
-   std::vector<CVector2> m_cFoodPos;
    CFloorEntity* m_pcFloor;
    CRandom::CRNG* m_pcRNG;
 
@@ -38,6 +43,14 @@ private:
    SInt64 m_nEnergy;
    UInt32 m_unEnergyPerFoodItem;
    UInt32 m_unEnergyPerWalkingRobot;
+   UInt32 unFoodItems;
+
+   /* NEW FIELDS */
+   // Global data structure of food item data
+   std::vector<SFoodItem> m_cFoodItems;
+   // Total reward across all foot-bots
+   int totalReward = 0;
+   int totalCompletingTask = 0;
 };
 
 #endif

@@ -34,6 +34,7 @@
 /* Definitions for random number generation */
 #include <argos3/core/utility/math/rng.h>
 
+#include "SFoodItem.h"
 /*
  * All the ARGoS stuff in the 'argos' namespace.
  * With this statement, you save typing argos:: every time.
@@ -54,11 +55,15 @@ public:
       bool HasFoodItem;      // true when the robot is carrying a food item
       size_t FoodItemIdx;    // the index of the current food item in the array of available food items
       size_t TotalFoodItems; // the total number of food items carried by this robot during the experiment
-      std::vector<CVector2> m_cFoodPos; // position of all the food
-
+      std::vector<SFoodItem> globalData; // global food data (OUR CHANGE)
+      std::vector<SFoodItem> localData; // local food data (OUR CHANGE)
       SFoodData();
       void Reset();
    };
+
+   // Current timestep of sim (OUR CHANGE)
+   int timestep;
+   int currFoodIdx;
 
    /*
     * The following variables are used as parameters for the
@@ -239,6 +244,7 @@ public:
    inline SFoodData& GetFoodData() {
       return m_sFoodData;
    }
+   
 
 private:
 
@@ -286,11 +292,26 @@ private:
     */
    void ReturnToNest();
 
-   void ExploreRandom();
+   /*
+    * OUR FUNCTIONS
+   */
 
+   bool noAvailableFood();
+
+   // Input a goal and diffusion vector to drive to a point
    void driveToGoal(CVector2 goal, CVector2 cDiffusion); 
 
+   // Select a food item according to a uniform random distribution
    CVector2 selectFoodRandom();
+
+   // Select the closest unassigned food item
+   CVector2 selectFoodClosest();
+
+   // Select the highest rewarding unassigned food item
+   CVector2 selectFoodBestReward();
+
+   // Use our novel algorithm to determine when to come back for new info
+   bool novelAlgorithm();
 
 private:
 
@@ -331,21 +352,33 @@ private:
    /* The food data */
    SFoodData m_sFoodData;
 
+
+   /*
+    * OUR FIELDS
+   */
+
+   // Goal vector
    CVector2 goal;
 
+   // Has a location been selected or is there still food?
    bool locationSelected = false;
 
-   CRadians last_diff;
-   CRadians angle_integral;
-   bool stillFood = true;
+   // When was the last time I got new information?
+   int lastInformationUpdate;
 
-   enum State {
-      TURNING_TO_GOAL,
-      DRIVING_TO_GOAL
-   };
-  
-   State drive_state = TURNING_TO_GOAL;
+   // Movement parameters
+   float r = 0.0205;
+   float L = 0.053;
 
+   float last_rho = 0.0;
+   float last_alpha = 0.0;
+
+   float kp_lin = 1.5;
+   float kd_lin = 0.75;
+   float kp_ang = 7.5;
+   float kd_ang = 1.0;
+
+   float expectedReward = 0.0;
 };
 
 #endif
