@@ -547,8 +547,10 @@ void CFootBotForaging::Explore() {
     * 2. if we have not found a food item for some time;
     *    in this case, the switch is probabilistic
     */
+   bool bReturnToNest(false);
+   
    if (true) {
-      bool bReturnToNest(false);
+      
 
       // If I'm sitting on the food, use the novel algorithm and see if I need to go back
       CVector2 pos(m_pcPosition->GetReading().Position.GetX(),
@@ -559,7 +561,7 @@ void CFootBotForaging::Explore() {
          }
          if(novelAlgorithm()) {
             bReturnToNest = true;
-            m_sFoodData.localData[currFoodIdx].Assigned = 0;
+            m_sFoodData.localData[currFoodIdx].Assigned = 2;
             locationSelected = false;
             lastInformationUpdate = 0;
          }
