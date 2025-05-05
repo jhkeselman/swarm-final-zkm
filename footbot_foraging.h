@@ -63,6 +63,7 @@ public:
 
    // Current timestep of sim (OUR CHANGE)
    int timestep;
+   int currFoodIdx;
 
    /*
     * The following variables are used as parameters for the
@@ -364,7 +365,6 @@ private:
 
    // When was the last time I got new information?
    int lastInformationUpdate;
-   int currFoodIdx;
 
    // Movement parameters
    float r = 0.0205;

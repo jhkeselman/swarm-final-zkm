@@ -35,12 +35,6 @@ void CFootBotForaging::driveToGoal(CVector2 goal, CVector2 cDiffusion) {
 
    m_pcWheels->SetLinearVelocity(vl, vr);
 
-   // If we're close enough on the food item, make the footbot orange (changing states soon)
-   float distance_thresh = 0.1;
-   if(diff.Length() < distance_thresh) {
-      m_pcLEDs->SetAllColors(CColor::ORANGE);
-   }
-
    last_rho = rho;
    last_alpha = alpha.GetValue();
 }
@@ -140,16 +134,16 @@ bool CFootBotForaging::noAvailableFood() {
 */
 bool CFootBotForaging::novelAlgorithm() {
    // Parameters to TUNE
-   float alpha = 0.5;
-   float beta = 1 - alpha;
+   float alpha = 3.0;
+   float beta = 1.0;
 
    float ageOfInfo = (timestep - lastInformationUpdate) / 100.0; // 100 is total food progress
 
    // The score metric
    float score = alpha * expectedReward - beta * ageOfInfo;
-   LOG << "ID: " << GetId() << " Reward: " << expectedReward << " ageInfo: " << ageOfInfo << std::endl;
-   // LOG << "ID: " << GetId() << " Score: " << score << std::endl;
-   return score < m_pcRNG->Uniform(CRange<UInt32>(0.0, 1.0));
+   float thresh = m_pcRNG->Uniform(CRange<UInt32>(0, 100));
+   // LOG << "ID: " << GetId() << " Re: " << alpha * expectedReward << " Info " << beta * ageOfInfo << " T " << thresh << std::endl;
+   return score * 100 < thresh;
 }
 
 
@@ -548,14 +542,17 @@ void CFootBotForaging::Explore() {
     *    in this case, the switch is probabilistic
     */
    bool bReturnToNest(false);
-   
+
    if (true) {
       
 
       // If I'm sitting on the food, use the novel algorithm and see if I need to go back
       CVector2 pos(m_pcPosition->GetReading().Position.GetX(),
                         m_pcPosition->GetReading().Position.GetY());
-      if((pos - m_sFoodData.localData[currFoodIdx].Position).SquareLength() < 0.1) {// Food radius
+      if((pos - m_sFoodData.localData[currFoodIdx].Position).SquareLength() < 0.01) {// Food radius
+         m_pcLEDs->SetAllColors(CColor::ORANGE);
+         // LOG << "Prog: " << m_sFoodData.globalData[currFoodIdx].Progress << std::endl;
+
          if(lastInformationUpdate == 0) {
             lastInformationUpdate = timestep;
          }
@@ -563,6 +560,7 @@ void CFootBotForaging::Explore() {
             bReturnToNest = true;
             m_sFoodData.localData[currFoodIdx].Assigned = 2;
             locationSelected = false;
+            currFoodIdx = -1;
             lastInformationUpdate = 0;
          }
       }
