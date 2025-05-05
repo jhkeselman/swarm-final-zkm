@@ -134,7 +134,7 @@ bool CFootBotForaging::noAvailableFood() {
 */
 bool CFootBotForaging::novelAlgorithm() {
    // Parameters to TUNE
-   float alpha = 3.0;
+   float alpha = 5.0;
    float beta = 1.0;
 
    float ageOfInfo = (timestep - lastInformationUpdate) / 100.0; // 100 is total food progress
