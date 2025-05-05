@@ -138,31 +138,18 @@ bool CFootBotForaging::noAvailableFood() {
 /*
  * Novel Algorithm
 */
-void CFootBotForaging::novelAlgorithm() {
+bool CFootBotForaging::novelAlgorithm() {
    // Parameters to TUNE
    float alpha = 0.5;
-   float beta = 0.5;
+   float beta = 1 - alpha;
 
-   // Current reward and time since we last got information
-   float reward = m_sFoodData.localData[currFoodIdx].Reward;
-   float deltaInfo = timestep - lastInformationUpdate;
+   float ageOfInfo = (timestep - lastInformationUpdate) / 100.0; // 100 is total food progress
 
    // The score metric
-   float score = alpha * reward - beta * deltaInfo;
-
-   // LOG << GetId() << "'s score " << score << " reward: " << reward << " last info: " << deltaInfo << std::endl;
-
-   // If our score is within some threshold, return to the nest
-   // if(score < 0.0) {
-   // if(timestep == 100) {
-   //    // Return to nest logic
-   //    m_pcLEDs->SetAllColors(CColor::BLUE);
-   //    m_sStateData.State = SStateData::STATE_RETURN_TO_NEST;
-
-   //    // We no longer have this food
-   //    m_sFoodData.localData[currFoodIdx].Assigned = 0;
-   //    locationSelected = false;
-   // }
+   float score = alpha * expectedReward - beta * ageOfInfo;
+   LOG << "ID: " << GetId() << " Reward: " << expectedReward << " ageInfo: " << ageOfInfo << std::endl;
+   // LOG << "ID: " << GetId() << " Score: " << score << std::endl;
+   return score < m_pcRNG->Uniform(CRange<UInt32>(0.0, 1.0));
 }
 
 
@@ -325,9 +312,6 @@ void CFootBotForaging::ControlStep() {
       }
       case SStateData::STATE_EXPLORING: {
          Explore();
-
-         // Call this while exploring to monitor when to return
-         novelAlgorithm();
          break;
       }
       case SStateData::STATE_RETURN_TO_NEST: {
@@ -516,9 +500,22 @@ void CFootBotForaging::Rest() {
       // For initialization, if the timestep is GEQ robot id, select an item (really only applies first few time steps)
       // LOG << "ID: " << GetId() << " timestep: " << timestep << " threshold " << std::stoi(GetId().substr(2)) + 1 << std::endl;
       if(timestep >= std::stoi(GetId().substr(2)) + 1) {
-         // Save we last got food at this timestep
-         lastInformationUpdate = timestep;
+         // Calculate reward metric
+         float num = 0.0;
+         float denom = 0.0;
+         CVector2 pos(m_pcPosition->GetReading().Position.GetX(),
+                  m_pcPosition->GetReading().Position.GetY());
 
+         for(SFoodItem item : m_sFoodData.localData) {
+            if(item.Assigned == 0) {
+               float dx = goal.GetX() - pos.GetX();
+               float dy = goal.GetY() - pos.GetY();
+               float dist = std::sqrt(dx * dx + dy * dy);
+               num += item.Reward * std::exp(-dist);
+               denom += 100 * std::exp(-dist);
+            }
+         }
+         expectedReward = num / denom;
          // Select a food according to these functions
          // goal = selectFoodRandom();
          goal = selectFoodClosest();
@@ -550,7 +547,25 @@ void CFootBotForaging::Explore() {
     * 2. if we have not found a food item for some time;
     *    in this case, the switch is probabilistic
     */
-   bool bReturnToNest(false);
+   if (true) {
+      bool bReturnToNest(false);
+
+      // If I'm sitting on the food, use the novel algorithm and see if I need to go back
+      CVector2 pos(m_pcPosition->GetReading().Position.GetX(),
+                        m_pcPosition->GetReading().Position.GetY());
+      if((pos - m_sFoodData.localData[currFoodIdx].Position).SquareLength() < 0.1) {// Food radius
+         if(lastInformationUpdate == 0) {
+            lastInformationUpdate = timestep;
+         }
+         if(novelAlgorithm()) {
+            bReturnToNest = true;
+            m_sFoodData.localData[currFoodIdx].Assigned = 0;
+            locationSelected = false;
+            lastInformationUpdate = 0;
+         }
+      }
+   }
+
    /*
     * Test the first condition: have we found a food item?
     * NOTE: the food data is updated by the loop functions, so

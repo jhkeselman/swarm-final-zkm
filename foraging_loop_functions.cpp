@@ -81,8 +81,13 @@ void CForagingLoopFunctions::loadFood() {
          for(SFoodItem& localItem : sFoodData.localData) {
             // Is the information the same?
              if(localItem.Position == globalItem.Position) {
-               // Synchronize using an "OR"
+               // My task didn't finish, going to reset this as free
+               if(localItem.Assigned == 2) {
+                  globalItem.Assigned = 0;
+               } else {
+                  // Synchronize using an "OR"
                  globalItem.Assigned = localItem.Assigned || globalItem.Assigned;
+               }
              }
          }
      }

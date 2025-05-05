@@ -310,7 +310,7 @@ private:
    CVector2 selectFoodBestReward();
 
    // Use our novel algorithm to determine when to come back for new info
-   void novelAlgorithm();
+   bool novelAlgorithm();
 
 private:
 
@@ -377,6 +377,8 @@ private:
    float kd_lin = 0.75;
    float kp_ang = 7.5;
    float kd_ang = 1.0;
+
+   float expectedReward = 0.0;
 };
 
 #endif
