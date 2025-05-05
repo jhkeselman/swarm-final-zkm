@@ -512,8 +512,8 @@ void CFootBotForaging::Rest() {
          expectedReward = num / denom;
          // Select a food according to these functions
          // goal = selectFoodRandom();
-         goal = selectFoodClosest();
-         // goal = selectFoodBestReward();
+         // goal = selectFoodClosest();
+         goal = selectFoodBestReward();
 
          // If a zero vector is returned, no food left!
          if (goal.GetX() == 0.0f && goal.GetY() == 0.0f) {
@@ -521,7 +521,7 @@ void CFootBotForaging::Rest() {
             m_pcWheels->SetLinearVelocity(0.0f, 0.0f);
          }
          else {
-            LOG << "Goal: " << goal << std::endl;
+            // LOG << "Goal: " << goal << std::endl;
             // We have a location, go towards the food (exploring state)
             locationSelected = true;
             m_pcLEDs->SetAllColors(CColor::GREEN);

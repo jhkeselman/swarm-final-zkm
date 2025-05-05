@@ -281,10 +281,16 @@ void CForagingLoopFunctions::PreStep() {
    /*
    * CHECK IF NEW FOOD NEEDS TO BE POPULATED
    */
+   int totalItems = 0;
+   for(SFoodItem item : m_cFoodItems) {
+      if (item.Position != CVector2(100.0f,100.f)) {
+         totalItems++;
+      }
+   }
    int tStep = argos::CSimulator::GetInstance().GetSpace().GetSimulationClock();
    // Every few time steps update (50)
    int recurrance = 200 / m_cFootbots.size();
-   if(tStep % recurrance == 0) {
+   if(tStep % recurrance == 0 && totalItems < m_cFootbots.size() + 10) {
       // Make a new food item and update the floor to match
       SFoodItem sItem = generateFoodItem();
       m_cFoodItems.push_back(sItem);
@@ -295,7 +301,7 @@ void CForagingLoopFunctions::PreStep() {
    loadFood();
 
    // Output the total reward
-   // LOG << "Total Reward: " << totalReward << std::endl;
+   LOG << "Total Reward: " << totalReward << std::endl;
 }
 
 /****************************************/
