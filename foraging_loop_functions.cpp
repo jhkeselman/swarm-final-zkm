@@ -272,7 +272,7 @@ void CForagingLoopFunctions::PreStep() {
    //           << unRestingFBs << "\t"
    //           << m_unCollectedFood << "\t"
    //           << m_nEnergy << std::endl;
-   float ratio = std::round(static_cast<float>(totalCompletingTask) / (GetSpace().GetSimulationClock() - totalCompletingTask) * 100) / 100;
+   float ratio = std::round(static_cast<float>(totalCompletingTask) / (GetSpace().GetSimulationClock() * m_cFootbots.size()) * 100) / 100;
    m_cOutput << GetSpace().GetSimulationClock() << "\t"
              << m_unCollectedFood << "\t"
              << ratio << "\t"
