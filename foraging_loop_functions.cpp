@@ -283,7 +283,7 @@ void CForagingLoopFunctions::PreStep() {
    */
    int tStep = argos::CSimulator::GetInstance().GetSpace().GetSimulationClock();
    // Every few time steps update (50)
-   int recurrance = 100 / m_cFootbots.size();
+   int recurrance = 200 / m_cFootbots.size();
    if(tStep % recurrance == 0) {
       // Make a new food item and update the floor to match
       SFoodItem sItem = generateFoodItem();
