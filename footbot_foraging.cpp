@@ -121,7 +121,6 @@ CVector2 CFootBotForaging::selectFoodBestReward() {
 
 bool CFootBotForaging::noAvailableFood() {
    for(SFoodItem item : m_sFoodData.localData) {
-      // LOG << "Footbot " << GetId() << " saw food item " << item.Position << std::endl;
       if(item.Position != CVector2(100.0f, 100.0f) && item.Assigned == 0) {
          return false;
       }
@@ -134,7 +133,7 @@ bool CFootBotForaging::noAvailableFood() {
 */
 bool CFootBotForaging::novelAlgorithm() {
    // Parameters to TUNE
-   float alpha = 4.0;
+   float alpha = 20.0;
    float beta = 1.0;
 
    float ageOfInfo = (timestep - lastInformationUpdate) / 100.0; // 100 is total food progress
@@ -142,7 +141,7 @@ bool CFootBotForaging::novelAlgorithm() {
    // The score metric
    float score = alpha * expectedReward - beta * ageOfInfo;
    float thresh = m_pcRNG->Uniform(CRange<UInt32>(0, 100));
-   // LOG << "ID: " << GetId() << " Re: " << alpha * expectedReward << " Info " << beta * ageOfInfo << " T " << thresh << std::endl;
+
    return score * 100 < thresh;
 }
 
@@ -492,7 +491,6 @@ void CFootBotForaging::Rest() {
       m_sFoodData.localData = m_sFoodData.globalData;
       
       // For initialization, if the timestep is GEQ robot id, select an item (really only applies first few time steps)
-      // LOG << "ID: " << GetId() << " timestep: " << timestep << " threshold " << std::stoi(GetId().substr(2)) + 1 << std::endl;
       if(timestep >= std::stoi(GetId().substr(2)) + 1) {
          // Calculate reward metric
          float num = 0.0;
@@ -521,7 +519,6 @@ void CFootBotForaging::Rest() {
             m_pcWheels->SetLinearVelocity(0.0f, 0.0f);
          }
          else {
-            // LOG << "Goal: " << goal << std::endl;
             // We have a location, go towards the food (exploring state)
             locationSelected = true;
             m_pcLEDs->SetAllColors(CColor::GREEN);
@@ -551,7 +548,6 @@ void CFootBotForaging::Explore() {
                         m_pcPosition->GetReading().Position.GetY());
       if((pos - m_sFoodData.localData[currFoodIdx].Position).SquareLength() < 0.01) {// Food radius
          m_pcLEDs->SetAllColors(CColor::ORANGE);
-         // LOG << "Prog: " << m_sFoodData.globalData[currFoodIdx].Progress << std::endl;
 
          if(lastInformationUpdate == 0) {
             lastInformationUpdate = timestep;
