@@ -134,7 +134,7 @@ bool CFootBotForaging::noAvailableFood() {
 */
 bool CFootBotForaging::novelAlgorithm() {
    // Parameters to TUNE
-   float alpha = 4.0;
+   float alpha = 5.0;
    float beta = 1.0;
 
    float ageOfInfo = (timestep - lastInformationUpdate) / 100.0; // 100 is total food progress
@@ -512,8 +512,8 @@ void CFootBotForaging::Rest() {
          expectedReward = num / denom;
          // Select a food according to these functions
          // goal = selectFoodRandom();
-         // goal = selectFoodClosest();
-         goal = selectFoodBestReward();
+         goal = selectFoodClosest();
+         // goal = selectFoodBestReward();
 
          // If a zero vector is returned, no food left!
          if (goal.GetX() == 0.0f && goal.GetY() == 0.0f) {
